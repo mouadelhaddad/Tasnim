@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Présentation — Audio Understanding · Qwen2-Audio-7B-Instruct</title>
+  <style>
+    /* ── Reset ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d1117;
+      --surface: #161b22;
+      --border:  #30363d;
+      --accent:  #6366f1;
+      --accent2: #8b5cf6;
+      --green:   #10b981;
+      --yellow:  #f59e0b;
+      --text:    #e6edf3;
+      --muted:   #8b949e;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #000;
+      overflow: hidden;
+    }
+
+    /* ── Slide container ─────────────────────────────────────────── */
+    .slideshow {
+      width: 100vw; height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      color: var(--text);
+      padding: 4vh 6vw;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity .35s ease, transform .35s ease;
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Slide header ────────────────────────────────────────────── */
+    .slide-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3vh;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5vh;
+    }
+
+    .slide-icon {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      flex-shrink: 0;
+    }
+
+    .slide-title {
+      font-size: clamp(1.1rem, 2.5vw, 1.8rem);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .slide-title span { color: #a5b4fc; }
+
+    .slide-num {
+      margin-left: auto;
+      font-size: clamp(.7rem, 1.2vw, .9rem);
+      color: var(--muted);
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+
+    /* ── Content helpers ─────────────────────────────────────────── */
+    .content { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2vh; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 3vw; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2vw; }
+
+    h2 {
+      font-size: clamp(.9rem, 1.8vw, 1.2rem);
+      font-weight: 600;
+      color: #a5b4fc;
+      margin-bottom: .6em;
+    }
+
+    p, li {
+      font-size: clamp(.75rem, 1.4vw, 1rem);
+      line-height: 1.65;
+      color: #cdd9e5;
+    }
+
+    ul { list-style: none; display: flex; flex-direction: column; gap: .5em; }
+
+    li::before { content: '▸ '; color: var(--accent); font-size: .8em; }
+
+    /* ── Cards ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: clamp(.8rem, 2vw, 1.4rem);
+    }
+
+    .card.accent { border-left: 3px solid var(--accent); }
+    .card.green  { border-left: 3px solid var(--green); }
+    .card.yellow { border-left: 3px solid var(--yellow); }
+
+    .card-icon { font-size: clamp(1.4rem, 2.5vw, 2rem); margin-bottom: .4em; }
+    .card h3 { font-size: clamp(.8rem, 1.5vw, 1.05rem); font-weight: 600; margin-bottom: .3em; }
+    .card p, .card li { font-size: clamp(.7rem, 1.2vw, .9rem); }
+
+    /* ── Code block ──────────────────────────────────────────────── */
+    pre {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: .8em 1em;
+      font-family: 'Courier New', monospace;
+      font-size: clamp(.6rem, 1.1vw, .82rem);
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .kw { color: #ff79c6; }
+    .st { color: #f1fa8c; }
+    .cm { color: #6272a4; }
+    .fn { color: #50fa7b; }
+    .num { color: #bd93f9; }
+
+    /* ── Tag / badge ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      background: rgba(99,102,241,.15);
+      border: 1px solid rgba(99,102,241,.35);
+      color: #a5b4fc;
+      font-size: clamp(.6rem, 1vw, .78rem);
+      padding: .15em .6em;
+      border-radius: 999px;
+    }
+
+    .badge.green {
+      background: rgba(16,185,129,.15);
+      border-color: rgba(16,185,129,.35);
+      color: #6ee7b7;
+    }
+
+    /* ── Architecture diagram ─────────────────────────────────────── */
+    .arch {
+      font-family: 'Courier New', monospace;
+      font-size: clamp(.55rem, 1vw, .78rem);
+      line-height: 1.55;
+      color: #cdd9e5;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1em 1.5em;
+    }
+
+    /* ── Endpoint table ───────────────────────────────────────────── */
+    .ep-table { display: flex; flex-direction: column; gap: .5em; }
+    .ep-row {
+      display: flex; align-items: center; gap: 1em;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6em 1em;
+      font-size: clamp(.65rem, 1.2vw, .88rem);
+    }
+    .ep-method {
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      padding: .15em .55em;
+      border-radius: 4px;
+      font-size: clamp(.55rem, 1vw, .75rem);
+      flex-shrink: 0;
+      font-family: monospace;
+    }
+    .ep-path { font-family: monospace; color: #79c0ff; flex: 1; }
+    .ep-desc { color: var(--muted); font-size: clamp(.6rem, 1vw, .8rem); }
+
+    /* ── Cover slide ──────────────────────────────────────────────── */
+    .cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,.25) 0%, transparent 65%), var(--bg);
+    }
+
+    .cover-emoji { font-size: clamp(3rem, 8vw, 5rem); margin-bottom: 2vh; }
+    .cover-title { font-size: clamp(1.5rem, 4vw, 2.8rem); font-weight: 800; line-height: 1.2; margin-bottom: 1vh; }
+    .cover-title span { color: #a5b4fc; }
+    .cover-sub { font-size: clamp(.8rem, 1.8vw, 1.15rem); color: var(--muted); margin-bottom: 2vh; }
+    .cover-model {
+      display: inline-block;
+      border: 1px solid var(--accent);
+      color: #a5b4fc;
+      font-family: monospace;
+      font-size: clamp(.7rem, 1.4vw, .95rem);
+      padding: .3em 1.2em;
+      border-radius: 6px;
+      margin-bottom: 3vh;
+    }
+    .cover-authors { font-size: clamp(.75rem, 1.4vw, 1rem); color: var(--muted); }
+    .cover-authors strong { color: var(--text); }
+
+    /* ── Nav controls ─────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      bottom: 2.5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: rgba(22,27,34,.9);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: .5rem 1.2rem;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: .2em .5em;
+      border-radius: 6px;
+      transition: color .15s, background .15s;
+    }
+    .nav-btn:hover { color: var(--text); background: var(--border); }
+    .nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+    .nav-counter {
+      font-size: .8rem;
+      color: var(--muted);
+      font-family: monospace;
+      min-width: 48px;
+      text-align: center;
+    }
+
+    /* Keyboard hint */
+    .kbd-hint {
+      position: fixed;
+      top: 1.5vh;
+      right: 2vw;
+      font-size: .7rem;
+      color: var(--muted);
+    }
+
+    /* Progress bar */
+    .progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .3s ease;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="kbd-hint">← → ou boutons pour naviguer · F11 plein écran</div>
+
+<div class="slideshow" id="slideshow">
+
+  <!-- ── SLIDE 1 : Cover ──────────────────────────────────────────── -->
+  <div class="slide cover active" id="s1">
+    <div class="cover-emoji">🎧</div>
+    <div class="cover-title">Audio <span>Understanding</span></div>
+    <div class="cover-sub">Compréhension audio par Intelligence Artificielle</div>
+    <div class="cover-model">Qwen2-Audio-7B-Instruct</div>
+    <div class="cover-authors">
+      <strong>Tassnim &amp; Zineb</strong><br>
+      Pr. Smail Tigani · Université Euromed de Fès · EIDIA · 2025/2026
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2 : Plan ───────────────────────────────────────────── -->
+  <div class="slide" id="s2">
+    <div class="slide-header">
+      <span class="slide-icon">📋</span>
+      <div class="slide-title">Plan de la présentation</div>
+      <div class="slide-num">2 / 10</div>
+    </div>
+    <div class="content">
+      <div class="two-col">
+        <div style="display:flex;flex-direction:column;gap:1em;">
+          <div class="card accent">
+            <div class="card-icon">🎯</div>
+            <h3>1. Contexte &amp; Objectifs</h3>
+            <p>Pourquoi la compréhension audio ? Que vise ce projet ?</p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">🧠</div>
+            <h3>2. Le modèle Qwen2-Audio</h3>
+            <p>Architecture, capacités, choix technique</p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">🔌</div>
+            <h3>3. API opérationnelle</h3>
+            <p>Les 3 endpoints POST implémentés</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1em;">
+          <div class="card accent">
+            <div class="card-icon">🖥️</div>
+            <h3>4. Interface web</h3>
+            <p>Démonstration de l'application</p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">⚡</div>
+            <h3>5. Difficultés &amp; Solutions</h3>
+            <p>Défis techniques rencontrés</p>
+          </div>
+          <div class="card accent">
+            <div class="card-icon">🚀</div>
+            <h3>6. Améliorations futures</h3>
+            <p>Pistes d'évolution du projet</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3 : Contexte ───────────────────────────────────────── -->
+  <div class="slide" id="s3">
+    <div class="slide-header">
+      <span class="slide-icon">🎯</span>
+      <div class="slide-title">Contexte &amp; Objectifs</div>
+      <div class="slide-num">3 / 10</div>
+    </div>
+    <div class="content">
+      <div class="two-col">
+        <div>
+          <h2>Pourquoi la compréhension audio ?</h2>
+          <ul>
+            <li>Les interfaces vocales sont omniprésentes</li>
+            <li>Au-delà de la transcription : <em>comprendre</em> le sens</li>
+            <li>Analyses de réunions, podcasts, cours enregistrés</li>
+            <li>Accessibilité pour les malentendants</li>
+            <li>Marchés en forte croissance (assistants, call centers, éducation)</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Objectifs du projet</h2>
+          <div style="display:flex;flex-direction:column;gap:.8em;">
+            <div class="card green">
+              <span class="badge green">6 pts</span>
+              <h3 style="margin-top:.4em;">API opérationnelle</h3>
+              <p>Endpoints POST fonctionnels avec le modèle</p>
+            </div>
+            <div class="card green">
+              <span class="badge green">10 pts</span>
+              <h3 style="margin-top:.4em;">Mise en application</h3>
+              <p>Plateforme web d'Audio Understanding</p>
+            </div>
+            <div class="card green">
+              <span class="badge green">4 pts</span>
+              <h3 style="margin-top:.4em;">Rapport &amp; Présentation</h3>
+              <p>Ce document + rapport académique</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4 : Le modèle ──────────────────────────────────────── -->
+  <div class="slide" id="s4">
+    <div class="slide-header">
+      <span class="slide-icon">🧠</span>
+      <div class="slide-title">Le modèle : <span>Qwen2-Audio-7B-Instruct</span></div>
+      <div class="slide-num">4 / 10</div>
+    </div>
+    <div class="content">
+      <div class="two-col">
+        <div>
+          <h2>Architecture</h2>
+          <div class="arch">
+Audio (16 kHz WAV/MP3/…)
+        │
+        ▼
+┌──────────────────────┐
+│  Encodeur Audio      │
+│  Whisper Large V2    │
+│  → embeddings audio  │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐    Prompt
+│  Fusion multimodale  │ ◄── texte
+│  Concaténation       │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│  Décodeur Qwen2-7B   │
+│  7 milliards params  │
+│  Génération token/t  │
+└──────────┬───────────┘
+           │
+    Réponse textuelle</div>
+        </div>
+        <div>
+          <h2>Pourquoi ce modèle ?</h2>
+          <ul>
+            <li>Open source — pas de coût d'API</li>
+            <li>Multilingue : français, anglais, arabe…</li>
+            <li>Traitement natif de l'audio brut</li>
+            <li>Q&amp;A libre en langage naturel sur l'audio</li>
+            <li>Analyse émotionnelle et tonale</li>
+            <li>État de l'art sur les benchmarks ASR</li>
+          </ul>
+          <div style="margin-top:1em;display:flex;gap:.5em;flex-wrap:wrap;">
+            <span class="badge">7B paramètres</span>
+            <span class="badge">Whisper encoder</span>
+            <span class="badge">Instruction-tuned</span>
+            <span class="badge">HuggingFace</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5 : API ────────────────────────────────────────────── -->
+  <div class="slide" id="s5">
+    <div class="slide-header">
+      <span class="slide-icon">🔌</span>
+      <div class="slide-title">API opérationnelle — <span>FastAPI</span></div>
+      <div class="slide-num">5 / 10</div>
+    </div>
+    <div class="content">
+      <div class="ep-table">
+        <div class="ep-row">
+          <span class="ep-method">POST</span>
+          <span class="ep-path">/api/v1/audio/transcribe</span>
+          <span class="ep-desc">Audio → Transcription complète du discours</span>
+        </div>
+        <div class="ep-row">
+          <span class="ep-method">POST</span>
+          <span class="ep-path">/api/v1/audio/understand</span>
+          <span class="ep-desc">Audio + Question → Réponse en langage naturel</span>
+        </div>
+        <div class="ep-row">
+          <span class="ep-method">POST</span>
+          <span class="ep-path">/api/v1/audio/analyze</span>
+          <span class="ep-desc">Audio → Transcription + Résumé + Sentiment</span>
+        </div>
+        <div class="ep-row">
+          <span class="ep-method" style="background:#10b981;">GET</span>
+          <span class="ep-path">/api/v1/health</span>
+          <span class="ep-desc">État du serveur et du modèle chargé</span>
+        </div>
+      </div>
+      <div class="two-col" style="margin-top:1.5vh;">
+        <div>
+          <h2>Exemple — /understand</h2>
+          <pre><span class="kw">curl</span> -X POST localhost:8000/api/v1/audio/understand \
+  -F <span class="st">"audio=@reunion.wav"</span> \
+  -F <span class="st">"question=Quelle est la langue parlée ?"</span></pre>
+        </div>
+        <div>
+          <h2>Réponse JSON</h2>
+          <pre>{
+  <span class="st">"question"</span>: <span class="st">"Quelle est la langue parlée ?"</span>,
+  <span class="st">"answer"</span>:   <span class="st">"L'audio est en français. Le locuteur
+             a un accent marocain."</span>,
+  <span class="st">"filename"</span>: <span class="st">"reunion.wav"</span>
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6 : Interface ──────────────────────────────────────── -->
+  <div class="slide" id="s6">
+    <div class="slide-header">
+      <span class="slide-icon">🖥️</span>
+      <div class="slide-title">Interface web — <span>3 fonctionnalités</span></div>
+      <div class="slide-num">6 / 10</div>
+    </div>
+    <div class="content">
+      <div class="three-col">
+        <div class="card accent">
+          <div class="card-icon">📝</div>
+          <h3>Transcrire</h3>
+          <ul>
+            <li>Upload fichier audio</li>
+            <li>Enregistrement micro</li>
+            <li>Transcription complète</li>
+            <li>Copie en un clic</li>
+          </ul>
+        </div>
+        <div class="card accent">
+          <div class="card-icon">💬</div>
+          <h3>Comprendre</h3>
+          <ul>
+            <li>Audio + question libre</li>
+            <li>Réponse contextuelle</li>
+            <li>Toute langue naturelle</li>
+            <li>Q&amp;A ouvert</li>
+          </ul>
+        </div>
+        <div class="card accent">
+          <div class="card-icon">🔍</div>
+          <h3>Analyser</h3>
+          <ul>
+            <li>Transcription intégrale</li>
+            <li>Résumé automatique</li>
+            <li>Détection du sentiment</li>
+            <li>Rapport complet</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:2vh;">
+        <h2 style="margin-bottom:.5em;">Technologies front-end</h2>
+        <div style="display:flex;gap:.6em;flex-wrap:wrap;">
+          <span class="badge">HTML5</span>
+          <span class="badge">CSS3</span>
+          <span class="badge">JavaScript (vanilla)</span>
+          <span class="badge">MediaRecorder API</span>
+          <span class="badge">Fetch API</span>
+          <span class="badge">Drag &amp; Drop</span>
+          <span class="badge">SPA — aucun framework</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 7 : Pipeline technique ─────────────────────────────── -->
+  <div class="slide" id="s7">
+    <div class="slide-header">
+      <span class="slide-icon">⚙️</span>
+      <div class="slide-title">Pipeline technique d'inférence</div>
+      <div class="slide-num">7 / 10</div>
+    </div>
+    <div class="content">
+      <div class="arch" style="font-size:clamp(.55rem, 1.05vw, .8rem);line-height:1.7;">
+1. Réception de la requête HTTP POST (multipart/form-data)
+   └─ Validation : format audio, taille ≤ 50 Mo, contenu non vide
+
+2. Décodage audio
+   ├─ soundfile  → WAV, FLAC, OGG (sans conversion)
+   └─ librosa + ffmpeg → MP3, M4A, WebM/Opus (conversion automatique)
+
+3. Rééchantillonnage → 16 000 Hz mono float32
+   (fréquence attendue par l'encodeur Whisper)
+
+4. Construction du chat template Qwen2-Audio
+   conversation = [
+       { "role": "system", "content": "You are a helpful audio assistant." },
+       { "role": "user",   "content": [
+           { "type": "audio", "audio_url": "placeholder" },
+           { "type": "text",  "text": &lt;prompt selon l'endpoint&gt; }
+       ]}
+   ]
+
+5. AutoProcessor  →  text tokens + audio features  →  tenseurs PyTorch
+
+6. Inférence  →  model.generate()  →  decode  →  réponse texte
+
+7. Sérialisation JSON  →  réponse HTTP 200
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 8 : Difficultés ────────────────────────────────────── -->
+  <div class="slide" id="s8">
+    <div class="slide-header">
+      <span class="slide-icon">⚡</span>
+      <div class="slide-title">Difficultés &amp; Solutions</div>
+      <div class="slide-num">8 / 10</div>
+    </div>
+    <div class="content">
+      <div style="display:flex;flex-direction:column;gap:1em;">
+        <div class="card yellow">
+          <h3>🎵 Formats audio hétérogènes</h3>
+          <p>
+            Les navigateurs enregistrent en WebM/Opus — format non géré nativement par
+            <code>soundfile</code>.<br>
+            <strong>Solution :</strong> double décodeur — <code>soundfile</code> en priorité,
+            <code>librosa + ffmpeg</code> en fallback.
+          </p>
+        </div>
+        <div class="card yellow">
+          <h3>💾 Ressources mémoire (14 Go VRAM)</h3>
+          <p>
+            Le modèle 7B en float16 requiert un GPU conséquent.<br>
+            <strong>Solution :</strong> détection automatique CUDA/CPU + mode mock
+            (<code>USE_MOCK=true</code>) pour le développement sans GPU.
+          </p>
+        </div>
+        <div class="card yellow">
+          <h3>🔗 Intégration du chat template multimodal</h3>
+          <p>
+            La synchronisation tokens audio / liste <code>audios=[…]</code> dans le
+            processeur Qwen2-Audio est non documentée de façon exhaustive.<br>
+            <strong>Solution :</strong> lecture du code source HuggingFace et tests unitaires.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 9 : Améliorations ──────────────────────────────────── -->
+  <div class="slide" id="s9">
+    <div class="slide-header">
+      <span class="slide-icon">🚀</span>
+      <div class="slide-title">Pistes d'amélioration</div>
+      <div class="slide-num">9 / 10</div>
+    </div>
+    <div class="content">
+      <div class="two-col">
+        <div style="display:flex;flex-direction:column;gap:.8em;">
+          <div class="card accent">
+            <h3>📡 Streaming des réponses</h3>
+            <p>Server-Sent Events pour afficher les tokens au fur et à mesure — meilleure UX.</p>
+          </div>
+          <div class="card accent">
+            <h3>💬 Conversation multi-tours</h3>
+            <p>Maintenir l'historique des échanges portant sur le même fichier audio.</p>
+          </div>
+          <div class="card accent">
+            <h3>🌍 Détection de langue automatique</h3>
+            <p>Identifier la langue du locuteur et adapter la réponse en conséquence.</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:.8em;">
+          <div class="card accent">
+            <h3>✂️ Traitement des audios longs</h3>
+            <p>Chunking pour gérer des réunions et conférences de plusieurs heures.</p>
+          </div>
+          <div class="card accent">
+            <h3>📦 Quantification 4-bit</h3>
+            <p>GPTQ / AWQ pour réduire l'empreinte mémoire à ~4 Go VRAM.</p>
+          </div>
+          <div class="card accent">
+            <h3>📊 Évaluation formelle (WER)</h3>
+            <p>Mesurer le Word Error Rate sur un corpus francophone de référence.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 10 : Conclusion ────────────────────────────────────── -->
+  <div class="slide cover" id="s10">
+    <div style="text-align:center;max-width:700px;">
+      <div class="cover-emoji">✅</div>
+      <div class="cover-title" style="font-size:clamp(1.3rem,3.5vw,2.2rem);margin-bottom:1.5vh;">
+        Merci de votre attention
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.8em;text-align:left;margin:2vh 0;">
+        <div class="card green" style="display:flex;align-items:center;gap:.8em;">
+          <span style="font-size:1.3rem;">🔌</span>
+          <span style="font-size:clamp(.7rem,1.3vw,.9rem);">3 endpoints POST opérationnels — /transcribe · /understand · /analyze</span>
+        </div>
+        <div class="card green" style="display:flex;align-items:center;gap:.8em;">
+          <span style="font-size:1.3rem;">🖥️</span>
+          <span style="font-size:clamp(.7rem,1.3vw,.9rem);">Interface web SPA avec upload, enregistrement micro et 3 onglets</span>
+        </div>
+        <div class="card green" style="display:flex;align-items:center;gap:.8em;">
+          <span style="font-size:1.3rem;">🧠</span>
+          <span style="font-size:clamp(.7rem,1.3vw,.9rem);">Modèle open source Qwen2-Audio-7B-Instruct — aucune API payante</span>
+        </div>
+      </div>
+      <div class="cover-authors" style="margin-top:2vh;">
+        <strong>Tassnim &amp; Zineb</strong><br>
+        Pr. Smail Tigani · Université Euromed de Fès · 2025/2026
+      </div>
+    </div>
+    <div class="slide-num" style="position:absolute;bottom:3vh;right:3vw;">10 / 10</div>
+  </div>
+
+</div><!-- /slideshow -->
+
+<!-- ── Navigation ─────────────────────────────────────────────────── -->
+<div class="nav">
+  <button class="nav-btn" id="btn-prev" disabled>◀</button>
+  <span class="nav-counter" id="counter">1 / 10</span>
+  <button class="nav-btn" id="btn-next">▶</button>
+</div>
+
+<script>
+  const slides   = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  const counter  = document.getElementById('counter');
+  const btnPrev  = document.getElementById('btn-prev');
+  const btnNext  = document.getElementById('btn-next');
+
+  let current = 0;
+  const total = slides.length;
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current].classList.remove('exit'), 350);
+
+    current = n;
+    slides[current].classList.add('active');
+
+    counter.textContent  = `${current + 1} / ${total}`;
+    btnPrev.disabled     = current === 0;
+    btnNext.disabled     = current === total - 1;
+    progress.style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  btnPrev.addEventListener('click', () => { if (current > 0) go(current - 1); });
+  btnNext.addEventListener('click', () => { if (current < total - 1) go(current + 1); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      if (current < total - 1) go(current + 1);
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (current > 0) go(current - 1);
+    }
+  });
+
+  // Init progress
+  progress.style.width = `${(1 / total) * 100}%`;
+</script>
+
+</body>
+</html>
