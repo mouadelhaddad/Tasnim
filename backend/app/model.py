@@ -135,11 +135,14 @@ def _run_inference(
         audios=[audio_array],
         return_tensors="pt",
         padding=True,
-        sampling_rate=_processor.feature_extractor.sampling_rate,
     )
 
     device = next(_model.parameters()).device
-    inputs = {k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in inputs.items()}
+    inputs["input_ids"] = inputs["input_ids"].to(device)
+    if "attention_mask" in inputs:
+        inputs["attention_mask"] = inputs["attention_mask"].to(device)
+
+    input_len = inputs["input_ids"].shape[1]
 
     with torch.no_grad():
         generated_ids = _model.generate(
@@ -150,7 +153,7 @@ def _run_inference(
             top_p=0.9,
         )
 
-    generated_ids = generated_ids[:, inputs["input_ids"].size(1):]
+    generated_ids = generated_ids[:, input_len:]
     response: str = _processor.batch_decode(
         generated_ids,
         skip_special_tokens=True,
