@@ -2,97 +2,108 @@
 
 const API_BASE = window.location.origin + '/api/v1';
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── État ───────────────────────────────────────────────────────────────────
 const state = {
-  transcribe: { file: null, blob: null },
-  understand: { file: null, blob: null },
-  analyze:    { file: null, blob: null },
-  recorder:   { mediaRecorder: null, chunks: [], activePanel: null, timerInterval: null, seconds: 0 },
+  transcrire: { file: null, blob: null },
+  comprendre: { file: null, blob: null },
+  analyser:   { file: null, blob: null },
+  recorder: {
+    mediaRecorder: null, chunks: [],
+    activePanel: null, timerInterval: null, seconds: 0,
+  },
 };
 
-// ── DOM helpers ─────────────────────────────────────────────────────────────
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
-// ── Tab switching ────────────────────────────────────────────────────────────
+// ── Onglets ────────────────────────────────────────────────────────────────
 $$('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
-    $$('.tab-btn').forEach(b => b.classList.remove('active'));
-    $$('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    $(`#panel-${target}`).classList.add('active');
+
+    $$('.tab-btn').forEach(b => {
+      b.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-violet-600',
+                         'text-white', 'shadow-md');
+      b.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+    });
+
+    btn.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-violet-600',
+                      'text-white', 'shadow-md');
+    btn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+
+    $$('.tab-panel').forEach(p => p.classList.add('hidden'));
+    $(`#panel-${target}`).classList.remove('hidden');
   });
 });
 
-// ── API health check ─────────────────────────────────────────────────────────
-async function checkHealth() {
+// ── Vérification santé de l'API ────────────────────────────────────────────
+async function verifierSante() {
   const dot  = $('#status-dot');
   const text = $('#status-text');
   try {
     const res  = await fetch(`${API_BASE}/health`);
     const data = await res.json();
     if (data.status === 'ok') {
-      dot.className  = 'status-dot online';
-      text.textContent = `Model loaded · ${data.device.toUpperCase()} · ${data.model_name}`;
+      dot.className  = 'dot-online w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0';
+      text.textContent = `Modèle chargé · ${data.device.toUpperCase()} · ${data.model_name}`;
     } else {
-      dot.className  = 'status-dot';
-      text.textContent = 'Model loading…';
-      setTimeout(checkHealth, 5000);
+      dot.className  = 'w-2 h-2 rounded-full bg-amber-400 flex-shrink-0';
+      text.textContent = 'Chargement du modèle…';
+      setTimeout(verifierSante, 5000);
     }
   } catch {
-    dot.className  = 'status-dot error';
-    text.textContent = 'API unreachable';
+    dot.className  = 'w-2 h-2 rounded-full bg-red-400 flex-shrink-0';
+    text.textContent = 'API inaccessible';
   }
 }
-checkHealth();
+verifierSante();
 
-// ── File upload handling ─────────────────────────────────────────────────────
-function setupUpload(panel, stateKey) {
-  const zone    = $(`#${panel}-zone`);
-  const input   = $(`#${panel}-file`);
-  const preview = $(`#${panel}-preview`);
+// ── Gestion de l'import de fichier ────────────────────────────────────────
+function configurerUpload(panelId) {
+  const zone    = $(`#${panelId}-zone`);
+  const input   = $(`#${panelId}-file`);
+  const preview = $(`#${panelId}-preview`);
 
-  // Drag-over visual
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('border-indigo-500/60', 'bg-indigo-500/5');
+  });
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('border-indigo-500/60', 'bg-indigo-500/5');
+  });
   zone.addEventListener('drop', e => {
     e.preventDefault();
-    zone.classList.remove('drag-over');
+    zone.classList.remove('border-indigo-500/60', 'bg-indigo-500/5');
     const f = e.dataTransfer.files[0];
-    if (f) handleFileSelect(f, stateKey, preview);
+    if (f) selectionnerFichier(f, panelId, preview);
   });
 
   input.addEventListener('change', () => {
-    if (input.files[0]) handleFileSelect(input.files[0], stateKey, preview);
+    if (input.files[0]) selectionnerFichier(input.files[0], panelId, preview);
   });
 
-  $(`#${panel}-remove`, preview).addEventListener('click', () => {
-    state[stateKey].file = null;
-    state[stateKey].blob = null;
+  $(`#${panelId}-remove`).addEventListener('click', () => {
+    state[panelId].file = null;
+    state[panelId].blob = null;
     input.value = '';
-    preview.classList.remove('visible');
+    preview.classList.add('hidden');
+    cacherResultat(panelId);
   });
 }
 
-function handleFileSelect(file, stateKey, previewEl) {
-  state[stateKey].file = file;
-  state[stateKey].blob = null;
-
+function selectionnerFichier(file, panelId, previewEl) {
+  state[panelId].file = file;
+  state[panelId].blob = null;
   $('[data-name]', previewEl).textContent = file.name;
-  $('[data-size]', previewEl).textContent = formatBytes(file.size);
-  previewEl.classList.add('visible');
-
-  // Reset result
-  hideResult(stateKey);
+  $('[data-size]', previewEl).textContent = formaterOctets(file.size);
+  previewEl.classList.remove('hidden');
+  cacherResultat(panelId);
 }
 
-setupUpload('transcribe', 'transcribe');
-setupUpload('understand', 'understand');
-setupUpload('analyze',    'analyze');
+['transcrire', 'comprendre', 'analyser'].forEach(configurerUpload);
 
-// ── Audio recorder ────────────────────────────────────────────────────────────
-function setupRecorder(panelId) {
+// ── Enregistrement micro ───────────────────────────────────────────────────
+function configurerRecorder(panelId) {
   const btn      = $(`#${panelId}-record-btn`);
   const status   = $(`#${panelId}-recorder-status`);
   const timer    = $(`#${panelId}-recorder-timer`);
@@ -102,15 +113,14 @@ function setupRecorder(panelId) {
 
   btn.addEventListener('click', async () => {
     if (r.mediaRecorder && r.mediaRecorder.state === 'recording') {
-      // Stop
       r.mediaRecorder.stop();
       clearInterval(r.timerInterval);
       btn.classList.remove('recording');
-      btn.innerHTML = '🎤';
-      status.textContent = 'Processing…';
-      waveform.classList.remove('active');
+      btn.textContent = '🎤';
+      status.textContent = 'Traitement…';
+      waveform.classList.add('hidden');
+      waveform.classList.remove('flex');
     } else {
-      // Start
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         r.chunks = [];
@@ -123,88 +133,103 @@ function setupRecorder(panelId) {
           const blob = new Blob(r.chunks, { type: 'audio/webm' });
           state[panelId].blob = blob;
           state[panelId].file = null;
-
-          const name = `recording_${Date.now()}.webm`;
+          const name = `enregistrement_${Date.now()}.webm`;
           $('[data-name]', preview).textContent = name;
-          $('[data-size]', preview).textContent = formatBytes(blob.size);
-          preview.classList.add('visible');
-          status.textContent = 'Recording ready';
-          timer.textContent = '';
+          $('[data-size]', preview).textContent = formaterOctets(blob.size);
+          preview.classList.remove('hidden');
+          status.textContent = 'Enregistrement prêt';
+          timer.textContent  = '';
           stream.getTracks().forEach(t => t.stop());
         };
 
         r.mediaRecorder.start();
         btn.classList.add('recording');
-        btn.innerHTML = '⏹';
-        status.textContent = 'Recording…';
-        waveform.classList.add('active');
+        btn.textContent = '⏹';
+        status.textContent = 'Enregistrement en cours…';
+        waveform.classList.remove('hidden');
+        waveform.classList.add('flex');
 
         r.timerInterval = setInterval(() => {
           r.seconds++;
-          timer.textContent = formatTime(r.seconds);
+          timer.textContent = formaterTemps(r.seconds);
         }, 1000);
 
       } catch (err) {
-        showAlert(panelId, `Microphone access denied: ${err.message}`, 'error');
+        afficherAlerte(panelId, `Accès microphone refusé : ${err.message}`, 'error');
       }
     }
   });
 }
 
-setupRecorder('transcribe');
-setupRecorder('understand');
-setupRecorder('analyze');
+['transcrire', 'comprendre', 'analyser'].forEach(configurerRecorder);
 
-// ── Submit handlers ───────────────────────────────────────────────────────────
-$('#transcribe-form').addEventListener('submit', async e => {
+// ── Soumission des formulaires ─────────────────────────────────────────────
+$('#transcrire-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const { file, blob } = state.transcribe;
-  if (!file && !blob) return showAlert('transcribe', 'Please select or record audio first.', 'error');
+  const { file, blob } = state.transcrire;
+  if (!file && !blob)
+    return afficherAlerte('transcrire', 'Veuillez sélectionner ou enregistrer un audio.', 'error');
 
   const fd = new FormData();
-  fd.append('audio', blob || file, blob ? `recording_${Date.now()}.webm` : file.name);
+  fd.append('audio', blob || file, blob ? `enregistrement_${Date.now()}.webm` : file.name);
 
-  const result = await callAPI(`${API_BASE}/audio/transcribe`, fd, 'transcribe-submit');
-  if (!result) return;
+  const data = await appelAPI(`${API_BASE}/audio/transcribe`, fd, 'transcrire-submit');
+  if (!data) return;
 
-  showTranscribeResult(result);
+  $('#transcrire-text').textContent = data.transcription;
+  if (data.duration_seconds) {
+    $('#transcrire-duration').textContent = `${data.duration_seconds}s`;
+    $('#transcrire-meta').classList.remove('hidden');
+  }
+  afficherResultat('transcrire');
 });
 
-$('#understand-form').addEventListener('submit', async e => {
+$('#comprendre-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const { file, blob } = state.understand;
-  if (!file && !blob) return showAlert('understand', 'Please select or record audio first.', 'error');
+  const { file, blob } = state.comprendre;
+  if (!file && !blob)
+    return afficherAlerte('comprendre', 'Veuillez sélectionner ou enregistrer un audio.', 'error');
 
-  const question = $('#understand-question').value.trim() || 'What is this audio about?';
+  const question = $('#comprendre-question').value.trim() || 'De quoi parle cet audio ?';
   const fd = new FormData();
-  fd.append('audio', blob || file, blob ? `recording_${Date.now()}.webm` : file.name);
+  fd.append('audio', blob || file, blob ? `enregistrement_${Date.now()}.webm` : file.name);
   fd.append('question', question);
 
-  const result = await callAPI(`${API_BASE}/audio/understand`, fd, 'understand-submit');
-  if (!result) return;
+  const data = await appelAPI(`${API_BASE}/audio/understand`, fd, 'comprendre-submit');
+  if (!data) return;
 
-  showUnderstandResult(result);
+  $('#comprendre-question-display').textContent = data.question;
+  $('#comprendre-answer').textContent           = data.answer;
+  afficherResultat('comprendre');
 });
 
-$('#analyze-form').addEventListener('submit', async e => {
+$('#analyser-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const { file, blob } = state.analyze;
-  if (!file && !blob) return showAlert('analyze', 'Please select or record audio first.', 'error');
+  const { file, blob } = state.analyser;
+  if (!file && !blob)
+    return afficherAlerte('analyser', 'Veuillez sélectionner ou enregistrer un audio.', 'error');
 
   const fd = new FormData();
-  fd.append('audio', blob || file, blob ? `recording_${Date.now()}.webm` : file.name);
+  fd.append('audio', blob || file, blob ? `enregistrement_${Date.now()}.webm` : file.name);
 
-  const result = await callAPI(`${API_BASE}/audio/analyze`, fd, 'analyze-submit');
-  if (!result) return;
+  const data = await appelAPI(`${API_BASE}/audio/analyze`, fd, 'analyser-submit');
+  if (!data) return;
 
-  showAnalyzeResult(result);
+  $('#analyser-transcription').textContent = data.transcription;
+  $('#analyser-resume').textContent        = data.summary;
+  $('#analyser-sentiment').textContent     = data.sentiment;
+  if (data.duration_seconds) {
+    $('#analyser-duration').textContent = `${data.duration_seconds}s`;
+    $('#analyser-meta').classList.remove('hidden');
+  }
+  afficherResultat('analyser');
 });
 
-// ── Generic API call ──────────────────────────────────────────────────────────
-async function callAPI(url, formData, btnId) {
+// ── Appel API générique ────────────────────────────────────────────────────
+async function appelAPI(url, formData, btnId) {
   const btn = $(`#${btnId}`);
-  setLoading(btn, true);
-  clearAlerts();
+  activerChargement(btn, true);
+  effacerAlertes();
 
   try {
     const res  = await fetch(url, { method: 'POST', body: formData });
@@ -212,88 +237,68 @@ async function callAPI(url, formData, btnId) {
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
     return data;
   } catch (err) {
-    const panel = btnId.split('-')[0];
-    showAlert(panel, err.message, 'error');
+    const panel = btnId.replace('-submit', '');
+    afficherAlerte(panel, err.message, 'error');
     return null;
   } finally {
-    setLoading(btn, false);
+    activerChargement(btn, false);
   }
 }
 
-// ── Result renderers ──────────────────────────────────────────────────────────
-function showTranscribeResult(data) {
-  const panel = $('#transcribe-result');
-  $('#transcribe-text').textContent = data.transcription;
-  if (data.duration_seconds) {
-    $('#transcribe-duration').textContent = `${data.duration_seconds}s`;
-    $('#transcribe-meta').style.display = 'flex';
-  }
-  panel.classList.add('visible');
+// ── Résultats ──────────────────────────────────────────────────────────────
+function afficherResultat(panelId) {
+  const el = $(`#${panelId}-result`);
+  el.classList.remove('hidden');
+  el.classList.add('fade-up');
 }
 
-function showUnderstandResult(data) {
-  const panel = $('#understand-result');
-  $('#understand-question-display').textContent = data.question;
-  $('#understand-answer').textContent = data.answer;
-  panel.classList.add('visible');
+function cacherResultat(panelId) {
+  $(`#${panelId}-result`)?.classList.add('hidden');
 }
 
-function showAnalyzeResult(data) {
-  const panel = $('#analyze-result');
-  $('#analyze-transcription').textContent = data.transcription;
-  $('#analyze-summary').textContent       = data.summary;
-  $('#analyze-sentiment').textContent     = data.sentiment;
-  if (data.duration_seconds) {
-    $('#analyze-duration').textContent = `${data.duration_seconds}s`;
-    $('#analyze-meta').style.display = 'flex';
-  }
-  panel.classList.add('visible');
-}
-
-function hideResult(key) {
-  const panel = $(`#${key}-result`);
-  if (panel) panel.classList.remove('visible');
-}
-
-// ── Copy buttons ──────────────────────────────────────────────────────────────
+// ── Boutons copier ─────────────────────────────────────────────────────────
 $$('.copy-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const targetId = btn.dataset.copy;
-    const text = $(targetId)?.textContent || '';
+    const text = $(btn.dataset.copy)?.textContent || '';
     navigator.clipboard.writeText(text).then(() => {
       const orig = btn.textContent;
-      btn.textContent = 'Copied!';
+      btn.textContent = 'Copié !';
       setTimeout(() => { btn.textContent = orig; }, 1500);
     });
   });
 });
 
-// ── Alert helpers ─────────────────────────────────────────────────────────────
-function showAlert(panel, message, type = 'error') {
-  const el = $(`#${panel}-alert`);
+// ── Alertes ────────────────────────────────────────────────────────────────
+function afficherAlerte(panelId, message) {
+  const el = $(`#${panelId}-alert`);
   if (!el) return;
-  el.className = `alert alert-${type}`;
   $('[data-msg]', el).textContent = message;
-  el.style.display = 'flex';
+  el.classList.remove('hidden');
+  el.classList.add('flex');
 }
 
-function clearAlerts() {
-  $$('.alert').forEach(el => { el.style.display = 'none'; });
+function effacerAlertes() {
+  $$('[id$="-alert"]').forEach(el => {
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  });
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function setLoading(btn, loading) {
-  btn.classList.toggle('loading', loading);
+// ── Chargement bouton ──────────────────────────────────────────────────────
+function activerChargement(btn, loading) {
   btn.disabled = loading;
+  $('.spinner', btn).classList.toggle('hidden', !loading);
+  $('.btn-label', btn).classList.toggle('hidden', loading);
 }
 
-function formatBytes(b) {
-  if (b < 1024) return `${b} B`;
-  if (b < 1048576) return `${(b/1024).toFixed(1)} KB`;
-  return `${(b/1048576).toFixed(1)} MB`;
+// ── Utilitaires ────────────────────────────────────────────────────────────
+function formaterOctets(b) {
+  if (b < 1024)    return `${b} o`;
+  if (b < 1048576) return `${(b / 1024).toFixed(1)} Ko`;
+  return `${(b / 1048576).toFixed(1)} Mo`;
 }
 
-function formatTime(secs) {
+function formaterTemps(secs) {
   const m = String(Math.floor(secs / 60)).padStart(2, '0');
   const s = String(secs % 60).padStart(2, '0');
   return `${m}:${s}`;
