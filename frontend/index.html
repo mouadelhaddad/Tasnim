@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audio Understanding — Qwen2-Audio-7B-Instruct</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────── -->
+<header>
+  <div class="header-content">
+    <div class="logo">
+      <div class="logo-icon">🎧</div>
+      <h1>Audio <span>Understanding</span></h1>
+    </div>
+    <p class="subtitle">Powered by Qwen2-Audio-7B-Instruct · Université Euromed de Fès</p>
+    <span class="badge">Audio-Text → Text</span>
+  </div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">Checking API…</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="transcribe" role="tab">
+      📝 Transcribe
+    </button>
+    <button class="tab-btn" data-tab="understand" role="tab">
+      💬 Understand
+    </button>
+    <button class="tab-btn" data-tab="analyze" role="tab">
+      🔍 Analyze
+    </button>
+  </div>
+
+  <!-- ── Tab: Transcribe ──────────────────────────────────────────────── -->
+  <div class="tab-panel active" id="panel-transcribe">
+    <div class="card">
+      <div class="card-title">📁 Audio Input</div>
+      <form id="transcribe-form">
+
+        <!-- Upload zone -->
+        <div class="upload-zone" id="transcribe-zone">
+          <input type="file" id="transcribe-file" accept="audio/*" />
+          <div class="upload-icon">🎵</div>
+          <p class="upload-text"><strong>Click to upload</strong> or drag &amp; drop</p>
+          <p class="upload-hint">WAV · MP3 · OGG · FLAC · WebM · M4A · max 50 MB</p>
+        </div>
+
+        <!-- File preview -->
+        <div class="file-preview" id="transcribe-preview">
+          <span class="file-icon">🎵</span>
+          <div class="file-info">
+            <div class="file-name" data-name>filename.wav</div>
+            <div class="file-size" data-size>0 KB</div>
+          </div>
+          <button type="button" class="file-remove" id="transcribe-remove" aria-label="Remove file">✕</button>
+        </div>
+
+        <!-- Recorder -->
+        <div class="recorder">
+          <button type="button" class="record-btn" id="transcribe-record-btn" aria-label="Record audio">🎤</button>
+          <div class="recorder-info">
+            <div class="recorder-status" id="transcribe-recorder-status">Click to record from microphone</div>
+            <div class="recorder-timer" id="transcribe-recorder-timer"></div>
+          </div>
+          <div class="waveform" id="transcribe-waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="alert alert-error" id="transcribe-alert" style="display:none">
+          <span class="alert-icon">⚠️</span>
+          <span data-msg></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="transcribe-submit">
+          <div class="spinner"></div>
+          <span class="btn-label">📝 Transcribe Audio</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Result -->
+    <div class="result-panel" id="transcribe-result">
+      <div class="card">
+        <div class="card-title">
+          ✅ Transcription
+          <button class="copy-btn" data-copy="#transcribe-text">Copy</button>
+        </div>
+        <div class="result-section">
+          <div class="result-label"><span class="dot"></span>Full Transcription</div>
+          <div class="result-content" id="transcribe-text"></div>
+        </div>
+        <div class="result-meta" id="transcribe-meta" style="display:none">
+          <span class="meta-chip">⏱ Duration: <strong id="transcribe-duration"></strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Understand ──────────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-understand">
+    <div class="card">
+      <div class="card-title">💬 Audio Q&amp;A</div>
+      <form id="understand-form">
+
+        <div class="upload-zone" id="understand-zone">
+          <input type="file" id="understand-file" accept="audio/*" />
+          <div class="upload-icon">🎵</div>
+          <p class="upload-text"><strong>Click to upload</strong> or drag &amp; drop</p>
+          <p class="upload-hint">WAV · MP3 · OGG · FLAC · WebM · M4A · max 50 MB</p>
+        </div>
+
+        <div class="file-preview" id="understand-preview">
+          <span class="file-icon">🎵</span>
+          <div class="file-info">
+            <div class="file-name" data-name>filename.wav</div>
+            <div class="file-size" data-size>0 KB</div>
+          </div>
+          <button type="button" class="file-remove" id="understand-remove" aria-label="Remove file">✕</button>
+        </div>
+
+        <div class="recorder">
+          <button type="button" class="record-btn" id="understand-record-btn" aria-label="Record audio">🎤</button>
+          <div class="recorder-info">
+            <div class="recorder-status" id="understand-recorder-status">Click to record from microphone</div>
+            <div class="recorder-timer" id="understand-recorder-timer"></div>
+          </div>
+          <div class="waveform" id="understand-waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <label for="understand-question">Your question about the audio</label>
+          <textarea
+            id="understand-question"
+            name="question"
+            rows="3"
+            placeholder="e.g. What language is spoken? Who is the main speaker? What emotions are expressed?"
+          >What is this audio about?</textarea>
+        </div>
+
+        <div class="alert alert-error" id="understand-alert" style="display:none">
+          <span class="alert-icon">⚠️</span>
+          <span data-msg></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="understand-submit">
+          <div class="spinner"></div>
+          <span class="btn-label">💬 Ask Question</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="result-panel" id="understand-result">
+      <div class="card">
+        <div class="card-title">
+          ✅ Answer
+          <button class="copy-btn" data-copy="#understand-answer">Copy</button>
+        </div>
+        <div class="result-section">
+          <div class="result-label"><span class="dot"></span>Question</div>
+          <div class="result-content" id="understand-question-display" style="font-style:italic;color:var(--text-muted)"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-label"><span class="dot"></span>Answer</div>
+          <div class="result-content" id="understand-answer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tab: Analyze ─────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-analyze">
+    <div class="card">
+      <div class="card-title">🔍 Comprehensive Analysis</div>
+      <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1rem">
+        Runs three analyses in sequence: full transcription, content summary, and sentiment/tone detection.
+      </p>
+      <form id="analyze-form">
+
+        <div class="upload-zone" id="analyze-zone">
+          <input type="file" id="analyze-file" accept="audio/*" />
+          <div class="upload-icon">🎵</div>
+          <p class="upload-text"><strong>Click to upload</strong> or drag &amp; drop</p>
+          <p class="upload-hint">WAV · MP3 · OGG · FLAC · WebM · M4A · max 50 MB</p>
+        </div>
+
+        <div class="file-preview" id="analyze-preview">
+          <span class="file-icon">🎵</span>
+          <div class="file-info">
+            <div class="file-name" data-name>filename.wav</div>
+            <div class="file-size" data-size>0 KB</div>
+          </div>
+          <button type="button" class="file-remove" id="analyze-remove" aria-label="Remove file">✕</button>
+        </div>
+
+        <div class="recorder">
+          <button type="button" class="record-btn" id="analyze-record-btn" aria-label="Record audio">🎤</button>
+          <div class="recorder-info">
+            <div class="recorder-status" id="analyze-recorder-status">Click to record from microphone</div>
+            <div class="recorder-timer" id="analyze-recorder-timer"></div>
+          </div>
+          <div class="waveform" id="analyze-waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <div class="alert alert-error" id="analyze-alert" style="display:none">
+          <span class="alert-icon">⚠️</span>
+          <span data-msg></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="analyze-submit">
+          <div class="spinner"></div>
+          <span class="btn-label">🔍 Analyze Audio</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="result-panel" id="analyze-result">
+      <div class="card">
+        <div class="card-title">✅ Analysis Report</div>
+
+        <div class="result-section">
+          <div class="result-label">
+            <span class="dot"></span>Transcription
+            <button class="copy-btn" data-copy="#analyze-transcription">Copy</button>
+          </div>
+          <div class="result-content" id="analyze-transcription"></div>
+        </div>
+
+        <div class="result-section">
+          <div class="result-label">
+            <span class="dot"></span>Summary
+            <button class="copy-btn" data-copy="#analyze-summary">Copy</button>
+          </div>
+          <div class="result-content" id="analyze-summary"></div>
+        </div>
+
+        <div class="result-section">
+          <div class="result-label">
+            <span class="dot"></span>Sentiment &amp; Tone
+            <button class="copy-btn" data-copy="#analyze-sentiment">Copy</button>
+          </div>
+          <div class="result-content" id="analyze-sentiment"></div>
+        </div>
+
+        <div class="result-meta" id="analyze-meta" style="display:none">
+          <span class="meta-chip">⏱ Duration: <strong id="analyze-duration"></strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    <strong>Audio Understanding Platform</strong> · Qwen2-Audio-7B-Instruct ·
+    Université Euromed de Fès · EIDIA · 2025/2026
+  </p>
+  <p style="margin-top:.3rem">Tassnim &amp; Zineb — Architecture Modernes de Réseaux de Neurones</p>
+</footer>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

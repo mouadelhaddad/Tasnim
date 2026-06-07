@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# HuggingFace cache (large model weights)
+.cache/
+hf_cache/
+
+# Audio uploads / temp
+uploads/
+tmp/
+*.wav
+*.mp3
+*.ogg
+*.webm
+*.m4a
+
+# Logs
+*.log
+logs/

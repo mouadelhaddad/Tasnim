@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: qwen2-audio-api
+    container_name: qwen2-audio-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend:ro
+      # Cache HuggingFace models so they aren't re-downloaded on restart
+      - hf_cache:/root/.cache/huggingface
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-Qwen/Qwen2-Audio-7B-Instruct}
+      - USE_MOCK=${USE_MOCK:-false}
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  hf_cache:
