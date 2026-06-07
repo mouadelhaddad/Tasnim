@@ -1,0 +1,521 @@
+\documentclass[12pt,a4paper]{report}
+
+% ── Encodage & langue ──────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ── Mise en page ───────────────────────────────────────────────────
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Typographie ────────────────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ── Couleurs & graphiques ──────────────────────────────────────────
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+
+\definecolor{accent}{RGB}{99,102,241}
+\definecolor{accentdark}{RGB}{67,56,202}
+\definecolor{lightgray}{RGB}{248,249,250}
+\definecolor{codebg}{RGB}{244,244,244}
+\definecolor{bordercolor}{RGB}{220,220,220}
+
+% ── En-têtes & pieds de page ───────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Audio Understanding --- Qwen2-Audio-7B-Instruct}}
+\fancyhead[R]{\small\textcolor{gray}{Tassnim \& Zineb}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Liens hypertexte ───────────────────────────────────────────────
+\usepackage[colorlinks=true,linkcolor=accentdark,urlcolor=accentdark,citecolor=accentdark]{hyperref}
+\usepackage{url}
+
+% ── Code source ────────────────────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  frame=leftline,
+  framerule=3pt,
+  rulecolor=\color{accent},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  showstringspaces=false,
+  keywordstyle=\color{accentdark}\bfseries,
+  stringstyle=\color{OliveGreen},
+  commentstyle=\color{gray}\itshape,
+  captionpos=b,
+  xleftmargin=1.5em,
+}
+\lstdefinestyle{json}{
+  language={},
+  morestring=[b]",
+  stringstyle=\color{OliveGreen},
+}
+\lstdefinestyle{bash}{
+  language=bash,
+  morekeywords={curl, uvicorn, pip, python},
+}
+
+% ── Tableaux ───────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{colortbl}
+
+% ── Titres de sections ─────────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\chapter}[block]
+  {\normalfont\Large\bfseries\color{accentdark}}
+  {\thechapter.}{.6em}{}[\vspace{-0.4em}\rule{\linewidth}{1.5pt}]
+\titleformat{\section}
+  {\normalfont\large\bfseries\color{accentdark}}
+  {\thesection}{.5em}{}
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}
+  {\thesubsection}{.5em}{}
+
+% ── Boîtes colorées ────────────────────────────────────────────────
+\usepackage{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{infobox}[1][]{
+  enhanced, breakable,
+  colback=lightgray, colframe=accent,
+  leftrule=4pt, rightrule=0pt, toprule=0pt, bottomrule=0pt,
+  arc=2pt, boxsep=4pt,
+  fonttitle=\bfseries\small, title=#1,
+}
+
+% ── Diagrammes avec verbatim ───────────────────────────────────────
+\usepackage{verbatim}
+\usepackage{fancyvrb}
+
+% ── Bibliographie ──────────────────────────────────────────────────
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+% ── Utilitaires ───────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{label=\textcolor{accent}{\textbullet}, leftmargin=1.5em}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% ═══════════════════════════════════════════════════════════════════
+\begin{document}
+% ═══════════════════════════════════════════════════════════════════
+
+% ── Page de garde ─────────────────────────────────────────────────
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+
+  {\Large\bfseries Université Euromed de Fès}\\[0.4em]
+  {\large École d'Ingénierie Digitale et d'Intelligence Artificielle}\\[0.2em]
+  {\normalsize 2\textsuperscript{ème} Année --- Intelligence Artificielle}
+
+  \vspace{1cm}
+  \rule{\linewidth}{1pt}
+  \vspace{0.5cm}
+
+  {\small\itshape Projet de Fin du Module}\\[0.3em]
+  {\normalsize Architecture Modernes de Réseaux de Neurones}
+
+  \vspace{1.5cm}
+
+  {\Huge\bfseries\color{accentdark} Rapport de Projet}\\[0.6em]
+  {\LARGE Audio Understanding}\\[0.4em]
+  {\large Compréhension Audio par Intelligence Artificielle}
+
+  \vspace{1cm}
+  \begin{tcolorbox}[
+    enhanced, colback=white, colframe=accent,
+    width=0.65\linewidth, arc=4pt,
+    halign=center
+  ]
+    \centering\ttfamily\large Qwen2-Audio-7B-Instruct
+  \end{tcolorbox}
+
+  \vspace{2cm}
+
+  \begin{tabular}{rl}
+    \textbf{Étudiantes :}  & Tassnim \& Zineb \\[0.3em]
+    \textbf{Encadrant :}   & Pr. Smail Tigani \\[0.3em]
+    \textbf{Année :}       & 2025 / 2026 \\
+  \end{tabular}
+
+  \vfill
+  \rule{\linewidth}{0.5pt}
+\end{titlepage}
+
+% ── Table des matières ─────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ═══════════════════════════════════════════════════════════════════
+\chapter{Introduction}
+% ═══════════════════════════════════════════════════════════════════
+
+\section{Contexte et motivation}
+
+L'intelligence artificielle connaît depuis quelques années une révolution majeure avec
+l'émergence des modèles de langage de grande taille (\textit{Large Language Models}, LLMs)
+et, plus récemment, des modèles multimodaux capables de traiter simultanément plusieurs
+types de données. Parmi ces avancées, la compréhension audio par IA représente une rupture
+technologique significative : il ne s'agit plus seulement de transcrire la parole, mais de
+\textit{comprendre} le contenu sonore dans toute sa richesse sémantique, émotionnelle et
+contextuelle.
+
+Ce projet s'inscrit dans le cadre du module \textit{Architecture Modernes de Réseaux de
+Neurones} dispensé à l'École d'Ingénierie Digitale et d'Intelligence Artificielle de
+l'Université Euromed de Fès. Il vise à concevoir et déployer une plateforme opérationnelle
+de compréhension audio, en s'appuyant sur un modèle open source de pointe :
+\textbf{Qwen2-Audio-7B-Instruct}, développé par Alibaba Cloud et disponible sur la
+plateforme Hugging Face.
+
+La pertinence de ce sujet est indéniable dans un monde où les interfaces vocales, les
+assistants intelligents et les outils d'analyse de réunions se multiplient. Maîtriser la
+chaîne complète --- du modèle brut à l'API exploitable --- constitue une compétence
+fondamentale pour tout ingénieur en intelligence artificielle.
+
+\section{Objectifs du projet}
+
+Le projet poursuit trois objectifs principaux, alignés sur les critères d'évaluation du
+module :
+
+\begin{enumerate}
+  \item \textbf{Monter une API opérationnelle} exposant des points de terminaison POST
+        capables de recevoir des fichiers audio, de les traiter via le modèle
+        Qwen2-Audio-7B-Instruct et de retourner une réponse textuelle structurée.
+
+  \item \textbf{Développer une mise en application concrète} matérialisée par une interface
+        web interactive permettant la transcription, la compréhension (Q\&A) et l'analyse
+        approfondie de contenus audio.
+
+  \item \textbf{Acquérir une expertise pratique} sur les modèles multimodaux audio-langage
+        en comprenant leur architecture, leur intégration et leurs limites.
+\end{enumerate}
+
+% ═══════════════════════════════════════════════════════════════════
+\chapter{Méthodologie}
+% ═══════════════════════════════════════════════════════════════════
+
+\section{Présentation du modèle Qwen2-Audio-7B-Instruct}
+
+\textbf{Qwen2-Audio-7B-Instruct} est un modèle multimodal de compréhension audio développé
+par le groupe Qwen d'Alibaba Cloud \cite{qwen2audio}. Il est publié en open source sous
+licence Apache 2.0 sur Hugging Face et constitue la version affinée par instruction
+(\textit{instruction-tuned}) du modèle de base Qwen2-Audio-7B.
+
+\subsection{Architecture interne}
+
+Le modèle repose sur une architecture hybride associant deux composants distincts :
+
+\begin{itemize}
+  \item \textbf{Un encodeur audio} de type Whisper Large V2 \cite{whisper}, responsable de
+        l'extraction des représentations acoustiques à partir des formes d'onde brutes.
+        Cet encodeur traite le signal audio échantillonné à 16\,000 Hz et produit une
+        séquence de vecteurs de caractéristiques denses.
+
+  \item \textbf{Un décodeur de langage Qwen2-7B} \cite{qwen2}, un modèle de langage
+        autorégressif à 7 milliards de paramètres, qui reçoit en entrée la concaténation
+        des représentations audio et des tokens textuels, et génère la réponse token par
+        token.
+\end{itemize}
+
+\begin{figure}[h]
+\centering
+\begin{Verbatim}[frame=single, rulecolor=\color{accent}, fontsize=\small]
+Audio (WAV 16 kHz)
+       |
+       v
++------------------------------+
+|   Encodeur Audio             |
+|   (Whisper Large V2)         |
+|   --> Feature Extraction     |
+|   --> Audio Embeddings       |
++-------------+----------------+
+              |   Audio tokens
+              v
++------------------------------+      Prompt texte
+|   Fusion Multimodale         | <--- (question/instruction)
+|   Concatenation des tokens   |
++-------------+----------------+
+              |
+              v
++------------------------------+
+|   Decodeur LLM Qwen2-7B      |
+|   (7B parametres)            |
+|   Generation autoregressive  |
++-------------+----------------+
+              |
+              v
+       Reponse textuelle
+\end{Verbatim}
+\caption{Architecture du modèle Qwen2-Audio-7B-Instruct}
+\end{figure}
+
+\subsection{Capacités du modèle}
+
+Qwen2-Audio-7B-Instruct excelle dans plusieurs tâches audio-langage : la reconnaissance
+automatique de la parole (ASR) en plusieurs langues, la réponse à des questions libres
+portant sur le contenu sonore, l'analyse émotionnelle et tonale, ainsi que la description
+d'événements sonores non-verbaux (musique, bruits ambiants, etc.).
+
+\section{Architecture du système}
+
+Le système développé s'articule autour de deux couches principales : un backend Python
+assurant l'inférence du modèle et l'exposition des endpoints, et un frontend HTML/CSS/JS
+offrant l'interface utilisateur.
+
+\begin{figure}[h]
+\centering
+\begin{Verbatim}[frame=single, rulecolor=\color{accent}, fontsize=\small]
++----------------------------------------------+
+|               Navigateur Web                 |
+|  Interface SPA -- 3 onglets :                |
+|  [ Transcrire ] [ Comprendre ] [ Analyser ]  |
+|  Upload fichier  /  Enregistrement micro     |
++--------------------+-------------------------+
+                     | HTTP POST multipart/form-data
+                     v
++----------------------------------------------+
+|         Backend FastAPI (port 8000)          |
+|                                              |
+|  POST /api/v1/audio/transcribe               |
+|  POST /api/v1/audio/understand               |
+|  POST /api/v1/audio/analyze                  |
+|  GET  /api/v1/health                         |
++--------------------+-------------------------+
+                     | Inference locale
+                     v
++----------------------------------------------+
+|     Qwen2-Audio-7B-Instruct (HuggingFace)    |
+|     CUDA float16  /  CPU float32             |
++----------------------------------------------+
+\end{Verbatim}
+\caption{Architecture globale du système}
+\end{figure}
+
+\section{API opérationnelle (FastAPI)}
+
+Le backend est développé avec le framework \textbf{FastAPI} \cite{fastapi} (Python),
+reconnu pour ses performances élevées, sa validation automatique des données via Pydantic,
+et sa génération automatique de documentation interactive (Swagger UI).
+
+\subsection{Endpoints implémentés}
+
+\begin{table}[h]
+\centering
+\rowcolors{2}{lightgray}{white}
+\begin{tabularx}{\textwidth}{llXX}
+\toprule
+\textbf{Méthode} & \textbf{Endpoint} & \textbf{Entrée} & \textbf{Sortie} \\
+\midrule
+POST & \texttt{/api/v1/audio/transcribe} & Fichier audio & Transcription complète \\
+POST & \texttt{/api/v1/audio/understand} & Fichier audio + question & Réponse à la question \\
+POST & \texttt{/api/v1/audio/analyze}    & Fichier audio & Transcription + résumé + sentiment \\
+GET  & \texttt{/api/v1/health}           & ---           & État du modèle et du serveur \\
+\bottomrule
+\end{tabularx}
+\caption{Endpoints de l'API}
+\end{table}
+
+\subsection{Pipeline de traitement}
+
+Chaque requête suit le pipeline suivant :
+
+\begin{enumerate}
+  \item Réception et validation du fichier audio (formats : WAV, MP3, OGG, FLAC, WebM,
+        M4A ; taille maximale : 50 Mo).
+  \item Décodage et rééchantillonnage à 16\,000 Hz via \texttt{soundfile} et
+        \texttt{librosa} \cite{librosa}.
+  \item Construction de la conversation au format \textit{chat template} Qwen2-Audio.
+  \item Appel au modèle via \texttt{model.generate()}.
+  \item Sérialisation de la réponse en JSON.
+\end{enumerate}
+
+\subsection{Exemple de requête et réponse}
+
+\begin{lstlisting}[style=bash, caption={Requête cURL vers /understand}]
+curl -X POST http://localhost:8000/api/v1/audio/understand \
+  -F "audio=@reunion.wav" \
+  -F "question=Quels sont les points principaux abordes ?"
+\end{lstlisting}
+
+\begin{lstlisting}[style=json, caption={Réponse JSON de l'endpoint /understand}]
+{
+  "question": "Quels sont les points principaux abordes ?",
+  "answer": "La reunion porte principalement sur le calendrier du
+             projet, la repartition des taches et le budget alloue
+             pour le trimestre.",
+  "filename": "reunion.wav"
+}
+\end{lstlisting}
+
+\section{Interface web}
+
+L'interface utilisateur est une application monopage (\textit{Single Page Application})
+développée en HTML5, CSS3 et JavaScript vanilla, servie directement par le backend FastAPI.
+Elle s'organise en trois onglets :
+
+\begin{itemize}
+  \item \textbf{Transcrire} --- l'utilisateur soumet un fichier audio ou enregistre sa
+        voix directement via le microphone ; le système retourne la transcription intégrale.
+
+  \item \textbf{Comprendre} --- l'utilisateur joint un fichier audio et formule une
+        question en langage naturel ; le modèle répond en s'appuyant sur le contenu de
+        l'audio.
+
+  \item \textbf{Analyser} --- le système produit automatiquement un rapport complet :
+        transcription, résumé des points clés et analyse du ton/sentiment exprimé.
+\end{itemize}
+
+L'enregistrement audio est réalisé via l'API Web \texttt{MediaRecorder} du navigateur,
+permettant une interaction directe sans logiciel tiers. Le fichier produit est transmis
+en \texttt{multipart/form-data} vers le backend.
+
+% ═══════════════════════════════════════════════════════════════════
+\chapter{Résultats}
+% ═══════════════════════════════════════════════════════════════════
+
+\section{Fonctionnalités implémentées}
+
+L'ensemble des fonctionnalités prévues a été implémenté avec succès. Le tableau
+ci-dessous récapitule les livrables du projet.
+
+\begin{table}[h]
+\centering
+\rowcolors{2}{lightgray}{white}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Livrable} & \textbf{Statut} & \textbf{Détails} \\
+\midrule
+API POST /transcribe    & Implémenté & Multilingue, WAV/MP3/OGG/FLAC/WebM/M4A \\
+API POST /understand    & Implémenté & Question libre en langage naturel \\
+API POST /analyze       & Implémenté & Transcription + résumé + sentiment \\
+Interface web           & Implémenté & 3 onglets, upload + enregistrement micro \\
+Documentation Swagger   & Auto-générée & Accessible à \texttt{/api/docs} \\
+Validation des entrées  & Implémenté & Format, taille, contenu vide \\
+Mode développement      & Implémenté & Variable \texttt{USE\_MOCK} sans GPU \\
+\bottomrule
+\end{tabularx}
+\caption{Récapitulatif des livrables}
+\end{table}
+
+\section{Exemples de sorties}
+
+Les tests ont été réalisés avec des fichiers audio variés (parole en français et en
+anglais, enregistrements de réunions, extraits musicaux).
+
+\begin{infobox}[Transcription --- fichier audio de 30 secondes en français]
+\textit{Sortie :} « Bonjour à tous. Aujourd'hui nous allons discuter des résultats du
+dernier trimestre. Nos indicateurs montrent une progression de 15\,\% par rapport à
+l'année précédente, ce qui dépasse nos objectifs initiaux... »
+\end{infobox}
+
+\begin{infobox}[Compréhension (Q\&A) --- Question : « Quelle est l'émotion du locuteur ? »]
+\textit{Réponse :} « Le locuteur exprime une satisfaction marquée et un enthousiasme
+modéré. Son ton est professionnel et confiant, avec des inflexions positives lorsqu'il
+mentionne les résultats dépassant les objectifs. »
+\end{infobox}
+
+\begin{infobox}[Analyse complète --- résumé et sentiment]
+\textit{Résumé :} « L'audio présente un discours de bilan trimestriel. Points clés :
+progression de 15\,\%, dépassement des objectifs, annonce d'un nouveau plan. »\\[0.3em]
+\textit{Sentiment :} « Ton positif et professionnel. Sentiment dominant : satisfaction et
+optimisme. »
+\end{infobox}
+
+\section{Difficultés rencontrées}
+
+Le développement du projet a présenté plusieurs défis techniques :
+
+\begin{itemize}
+  \item \textbf{Gestion des formats audio hétérogènes.} Les navigateurs web produisent des
+        enregistrements au format WebM/Opus, non nativement supporté par
+        \texttt{soundfile}. La solution adoptée consiste à utiliser \texttt{librosa} comme
+        \textit{fallback}, qui s'appuie sur \texttt{ffmpeg} pour décoder les formats
+        exotiques.
+
+  \item \textbf{Ressources mémoire.} Le modèle Qwen2-Audio-7B-Instruct requiert environ
+        14 Go de VRAM en précision float16. En l'absence de GPU, l'exécution sur CPU est
+        possible mais significativement plus lente (facteur $\times 10$ à $\times 20$).
+
+  \item \textbf{Intégration du chat template multimodal.} La méthode
+        \texttt{apply\_chat\_template} du processeur Qwen2-Audio nécessite une structure
+        de conversation précise mélangeant tokens audio et tokens textuels. La
+        synchronisation entre les marqueurs audio dans le template et la liste
+        \texttt{audios=[...]} passée au processeur a demandé une lecture approfondie du
+        code source du modèle.
+
+  \item \textbf{Temps d'initialisation.} Le chargement du modèle depuis Hugging Face
+        représente environ 14 Go de téléchargement à la première exécution. Le modèle est
+        ensuite mis en cache localement pour les exécutions suivantes.
+\end{itemize}
+
+% ═══════════════════════════════════════════════════════════════════
+\chapter{Conclusion}
+% ═══════════════════════════════════════════════════════════════════
+
+\section{Bilan du projet}
+
+Ce projet nous a permis de maîtriser la chaîne de valeur complète d'un système d'IA
+audio en production. Nous sommes parties de la compréhension théorique de l'architecture
+Qwen2-Audio --- encodeur Whisper couplé à un décodeur Qwen2-7B --- pour aboutir à une
+application web pleinement opérationnelle, exposant trois endpoints REST bien définis et
+une interface utilisateur soignée.
+
+Le projet illustre concrètement comment des modèles open source de grande taille peuvent
+être déployés dans des scénarios réels sans recourir à des APIs propriétaires tierces.
+L'approche adoptée --- inférence locale, API FastAPI, frontend SPA --- constitue une
+architecture reproductible et extensible pour de nombreux cas d'usage industriels.
+
+Sur le plan pédagogique, ce projet a renforcé notre compréhension des modèles
+multimodaux, de la gestion des flux audio, de la conception d'APIs REST et du
+développement d'interfaces web modernes. Il nous a également sensibilisées aux
+contraintes pratiques du déploiement de LLMs : consommation mémoire, temps de
+chargement et gestion des formats de données hétérogènes.
+
+\section{Pistes d'amélioration}
+
+Plusieurs améliorations pourraient enrichir ce projet dans une version future :
+
+\begin{itemize}
+  \item \textbf{Streaming des réponses.} Implémenter les \textit{Server-Sent Events} (SSE)
+        pour afficher la réponse du modèle token par token, améliorant ainsi la réactivité
+        perçue par l'utilisateur.
+
+  \item \textbf{Conversation multi-tours.} Permettre plusieurs échanges successifs portant
+        sur le même fichier audio, en maintenant un contexte de dialogue.
+
+  \item \textbf{Détection de langue automatique.} Identifier automatiquement la langue du
+        locuteur et adapter la réponse en conséquence.
+
+  \item \textbf{Support des audios longs.} Implémenter un mécanisme de découpage
+        (\textit{chunking}) pour traiter des enregistrements de plusieurs heures (réunions,
+        conférences, podcasts).
+
+  \item \textbf{Quantification 4-bit.} Utiliser des techniques de quantification (GPTQ,
+        AWQ) pour réduire l'empreinte mémoire et permettre l'exécution sur des GPUs de
+        moindre capacité ($\leq 8$ Go VRAM).
+
+  \item \textbf{Évaluation formelle (WER).} Mesurer le \textit{Word Error Rate} sur un
+        corpus francophone de référence pour quantifier objectivement la précision du
+        modèle.
+\end{itemize}
+
+% ── Bibliographie ──────────────────────────────────────────────────
+\printbibliography[heading=bibintoc, title={Références bibliographiques}]
+
+\end{document}
