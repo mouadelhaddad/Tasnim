@@ -45,3 +45,15 @@ tmp/
 # Logs
 *.log
 logs/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.out
+*.run.xml
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
