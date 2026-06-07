@@ -4,46 +4,52 @@ import logging
 import tempfile
 import numpy as np
 import torch
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2-Audio-7B-Instruct")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2-Audio-7B-Instruct")
+USE_MOCK = os.getenv("USE_MOCK", "false").lower() == "true"
+# Optional quantization for limited-VRAM GPUs (e.g. Colab T4 ~15 GB).
 LOAD_IN_4BIT = os.getenv("LOAD_IN_4BIT", "false").lower() == "true"
 LOAD_IN_8BIT = os.getenv("LOAD_IN_8BIT", "false").lower() == "true"
 
-_processor    = None
-_model        = None
-_device       = "cpu"
+_processor = None
+_model = None
+_device = "cpu"
 _model_loaded = False
 
 
 def get_model_status() -> Dict[str, Any]:
     return {
         "model_loaded": _model_loaded,
-        "model_name":   MODEL_NAME,
-        "device":       _device,
+        "model_name": MODEL_NAME,
+        "device": _device,
+        "mock_mode": USE_MOCK,
     }
 
 
 def load_model() -> None:
     global _processor, _model, _device, _model_loaded
 
+    if USE_MOCK:
+        logger.info("MOCK mode enabled — skipping model download")
+        _model_loaded = True
+        return
+
     logger.info("Loading Qwen2-Audio-7B-Instruct …")
 
     from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
 
     _device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype   = torch.float16 if _device == "cuda" else torch.float32
+    dtype = torch.float16 if _device == "cuda" else torch.float32
 
     _processor = AutoProcessor.from_pretrained(MODEL_NAME)
 
     load_kwargs: Dict[str, Any] = {"torch_dtype": dtype}
     quantized = False
-
     if _device == "cuda":
         load_kwargs["device_map"] = "auto"
-
         if LOAD_IN_4BIT or LOAD_IN_8BIT:
             from transformers import BitsAndBytesConfig
 
@@ -75,7 +81,7 @@ def load_model() -> None:
 # Audio helpers
 # ---------------------------------------------------------------------------
 
-def _load_audio_bytes(audio_bytes: bytes, filename: str) -> tuple:
+def _load_audio_bytes(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, int]:
     """Return (mono float32 array, sample_rate) from raw audio bytes."""
     import soundfile as sf
     import librosa
@@ -98,11 +104,13 @@ def _load_audio_bytes(audio_bytes: bytes, filename: str) -> tuple:
             os.unlink(tmp_path)
 
 
-def _preprocess_audio(audio_bytes: bytes, filename: str) -> tuple:
+def _preprocess_audio(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, float]:
     """Load, resample to model SR, return (array, duration_seconds)."""
     import librosa
 
-    target_sr: int = _processor.feature_extractor.sampling_rate
+    target_sr: int = (
+        _processor.feature_extractor.sampling_rate if _processor else 16000
+    )
     data, sr = _load_audio_bytes(audio_bytes, filename)
     duration = len(data) / sr
 
@@ -116,13 +124,54 @@ def _preprocess_audio(audio_bytes: bytes, filename: str) -> tuple:
 # Inference
 # ---------------------------------------------------------------------------
 
+def _build_inputs(text: str, audio_array: np.ndarray, sampling_rate: int):
+    """Feed the audio to the processor.
+
+    ``transformers`` renamed the audio argument across versions
+    (``audios`` -> ``audio``). Passing the wrong name is silently ignored
+    (it lands in ``**kwargs``), which strips the audio from the model inputs.
+    We try both and keep the call that actually yields ``input_features``.
+    """
+    last_inputs = None
+    for key in ("audios", "audio"):
+        try:
+            inputs = _processor(
+                text=text,
+                return_tensors="pt",
+                padding=True,
+                sampling_rate=sampling_rate,
+                **{key: [audio_array]},
+            )
+        except (TypeError, ValueError):
+            continue
+        last_inputs = inputs
+        if "input_features" in inputs:
+            logger.info(
+                "Audio passed via '%s' (input_features shape=%s)",
+                key, tuple(inputs["input_features"].shape),
+            )
+            return inputs
+        logger.warning("Processor ignored audio argument '%s' (no input_features)", key)
+
+    return last_inputs
+
+
 def _run_inference(
     audio_array: np.ndarray,
     conversation: List[Dict[str, Any]],
     max_new_tokens: int = 512,
 ) -> str:
+    if USE_MOCK:
+        return (
+            "Mock response: The audio contains spoken content. "
+            "Enable the real model by setting USE_MOCK=false and providing GPU resources."
+        )
+
     if _model is None or _processor is None:
         raise RuntimeError("Model is not loaded yet.")
+
+    if audio_array is None or len(audio_array) < 10:
+        raise RuntimeError("Audio is empty or too short to process.")
 
     text: str = _processor.apply_chat_template(
         conversation,
@@ -130,19 +179,30 @@ def _run_inference(
         tokenize=False,
     )
 
-    inputs = _processor(
-        text=text,
-        audios=[audio_array],
-        return_tensors="pt",
-        padding=True,
+    inputs = _build_inputs(
+        text, audio_array, _processor.feature_extractor.sampling_rate
     )
 
-    device = next(_model.parameters()).device
-    inputs["input_ids"] = inputs["input_ids"].to(device)
-    if "attention_mask" in inputs:
-        inputs["attention_mask"] = inputs["attention_mask"].to(device)
+    # If the audio never made it into the inputs, the model would silently
+    # answer as a text-only LLM ("I can't access the audio"). Fail loudly.
+    if inputs is None or "input_features" not in inputs:
+        raise RuntimeError(
+            "Audio features missing from model inputs — the audio did not reach "
+            "the model. Check the installed transformers version and audio decoding."
+        )
 
-    input_len = inputs["input_ids"].shape[1]
+    # Move tensors to the model device; match the model dtype for audio features
+    # (the encoder is fp16 on GPU and would reject fp32 features).
+    device = next(_model.parameters()).device
+    model_dtype = next(_model.parameters()).dtype
+    prepared: Dict[str, Any] = {}
+    for k, v in inputs.items():
+        if isinstance(v, torch.Tensor):
+            v = v.to(device)
+            if k == "input_features" and v.is_floating_point():
+                v = v.to(model_dtype)
+        prepared[k] = v
+    inputs = prepared
 
     with torch.no_grad():
         generated_ids = _model.generate(
@@ -153,7 +213,8 @@ def _run_inference(
             top_p=0.9,
         )
 
-    generated_ids = generated_ids[:, input_len:]
+    # Strip the prompt tokens
+    generated_ids = generated_ids[:, inputs["input_ids"].size(1):]
     response: str = _processor.batch_decode(
         generated_ids,
         skip_special_tokens=True,
@@ -172,8 +233,9 @@ def _build_conversation(prompt: str) -> List[Dict[str, Any]]:
         {
             "role": "user",
             "content": [
+                # audio_url is a placeholder; actual audio is passed via `audios=`
                 {"type": "audio", "audio_url": "audio_input"},
-                {"type": "text",  "text": prompt},
+                {"type": "text", "text": prompt},
             ],
         },
     ]
@@ -185,16 +247,17 @@ def _build_conversation(prompt: str) -> List[Dict[str, Any]]:
 
 def transcribe(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
     audio_array, duration = _preprocess_audio(audio_bytes, filename)
-    result = _run_inference(
-        audio_array,
-        _build_conversation("Please transcribe this audio accurately and completely."),
+    conversation = _build_conversation(
+        "Please transcribe this audio accurately and completely."
     )
+    result = _run_inference(audio_array, conversation)
     return {"transcription": result, "duration_seconds": round(duration, 2)}
 
 
 def understand(audio_bytes: bytes, filename: str, question: str) -> str:
     audio_array, _ = _preprocess_audio(audio_bytes, filename)
-    return _run_inference(audio_array, _build_conversation(question))
+    conversation = _build_conversation(question)
+    return _run_inference(audio_array, conversation)
 
 
 def analyze(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
@@ -222,7 +285,7 @@ def analyze(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
 
     return {
         "transcription": transcription,
-        "summary":       summary,
-        "sentiment":     sentiment,
+        "summary": summary,
+        "sentiment": sentiment,
         "duration_seconds": round(duration, 2),
     }

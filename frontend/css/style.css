@@ -1,40 +1,187 @@
-/* Animations personnalisées non couvertes par Tailwind */
+/* ════════════════════════════════════════════════════════════════════════
+   Compréhension Audio — Feuille de style personnalisée
+   Thème clair · complète Tailwind (CDN) : typographie, finitions, animations.
+   ════════════════════════════════════════════════════════════════════════ */
 
-/* Couleur des barres d'onde micro (thème clair) */
-.wave-bar { background-color: #6366f1; }
+/* ── Typographie ───────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* Animation de l'onde */
+:root {
+  --brand: #4f46e5;
+  --brand-dark: #4338ca;
+  --brand-light: #6366f1;
+}
+
+html {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
+}
+
+/* ── Cartes : survol discret ───────────────────────────────────────────── */
+.card {
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: #c7d2fe;
+  /* indigo-200 */
+  box-shadow:
+    0 8px 24px -12px rgba(79, 70, 229, .18),
+    0 2px 6px -2px rgba(16, 24, 40, .06);
+}
+
+/* ── Barre d'onde micro ────────────────────────────────────────────────── */
+.wave-bar {
+  background: linear-gradient(to top, var(--brand), var(--brand-light));
+  animation: wave 1s ease-in-out infinite;
+}
+
 @keyframes wave {
-  0%, 100% { height: 6px;  }
-  50%       { height: 22px; }
-}
-.wave-bar { animation: wave 1s ease-in-out infinite; }
-.wave-bar:nth-child(2) { animation-delay: .12s; }
-.wave-bar:nth-child(3) { animation-delay: .24s; }
-.wave-bar:nth-child(4) { animation-delay: .36s; }
-.wave-bar:nth-child(5) { animation-delay: .48s; }
 
-/* Bouton d'enregistrement actif */
+  0%,
+  100% {
+    height: 6px;
+  }
+
+  50% {
+    height: 22px;
+  }
+}
+
+.wave-bar:nth-child(2) {
+  animation-delay: .12s;
+}
+
+.wave-bar:nth-child(3) {
+  animation-delay: .24s;
+}
+
+.wave-bar:nth-child(4) {
+  animation-delay: .36s;
+}
+
+.wave-bar:nth-child(5) {
+  animation-delay: .48s;
+}
+
+/* ── Bouton d'enregistrement (état actif) ──────────────────────────────── */
 @keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0    rgba(239,68,68,.6); }
-  50%       { box-shadow: 0 0 0 12px rgba(239,68,68,0);  }
-}
-.recording { animation: pulse-red 1.2s ease-in-out infinite; }
 
-/* Point de statut en ligne */
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, .5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+.recording {
+  animation: pulse-red 1.2s ease-in-out infinite;
+}
+
+/* ── Point de statut en ligne ──────────────────────────────────────────── */
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(16,185,129,.5); }
-  50%       { box-shadow: 0 0 0 6px rgba(16,185,129,0);  }
-}
-.dot-online { animation: pulse-green 2s ease-in-out infinite; }
 
-/* Apparition des résultats */
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, .45);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+.dot-online {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+
+/* ── Apparition résultat ───────────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-.fade-up { animation: fadeUp .35s ease-out; }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-/* Spinner */
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner { animation: spin .65s linear infinite; }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp .35s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* ── Spinner ───────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin .65s linear infinite;
+}
+
+/* ── Barre de défilement personnalisée ─────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* slate-300 */
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 */
+  background-clip: content-box;
+}
+
+/* ── Sélection de texte ────────────────────────────────────────────────── */
+::selection {
+  background: rgba(79, 70, 229, .15);
+  color: #312e81;
+}
+
+/* ── Accessibilité : focus clavier visible ─────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Respect des préférences de mouvement réduit ───────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
