@@ -6,7 +6,7 @@ const API_BASE = window.location.origin + '/api/v1';
 const state = {
   transcrire: { file: null, blob: null },
   comprendre: { file: null, blob: null },
-  analyser:   { file: null, blob: null },
+  analyser: { file: null, blob: null },
   recorder: {
     mediaRecorder: null, chunks: [],
     activePanel: null, timerInterval: null, seconds: 0,
@@ -16,20 +16,22 @@ const state = {
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
 const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
+// Icônes (jeu de traits, cohérent avec le HTML)
+const ICON_MIC = `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>`;
+const ICON_STOP = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
+
 // ── Onglets ────────────────────────────────────────────────────────────────
 $$('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
 
     $$('.tab-btn').forEach(b => {
-      b.classList.remove('bg-gradient-to-r', 'from-indigo-500', 'to-violet-600',
-                         'text-white', 'shadow-md');
-      b.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+      b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+      b.classList.add('text-slate-500', 'hover:text-slate-800');
     });
 
-    btn.classList.add('bg-gradient-to-r', 'from-indigo-500', 'to-violet-600',
-                      'text-white', 'shadow-md');
-    btn.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+    btn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+    btn.classList.remove('text-slate-500', 'hover:text-slate-800');
 
     $$('.tab-panel').forEach(p => p.classList.add('hidden'));
     $(`#panel-${target}`).classList.remove('hidden');
@@ -38,21 +40,21 @@ $$('.tab-btn').forEach(btn => {
 
 // ── Vérification santé de l'API ────────────────────────────────────────────
 async function verifierSante() {
-  const dot  = $('#status-dot');
+  const dot = $('#status-dot');
   const text = $('#status-text');
   try {
-    const res  = await fetch(`${API_BASE}/health`);
+    const res = await fetch(`${API_BASE}/health`);
     const data = await res.json();
     if (data.status === 'ok') {
-      dot.className  = 'dot-online w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0';
+      dot.className = 'dot-online w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0';
       text.textContent = `Modèle chargé · ${data.device.toUpperCase()} · ${data.model_name}`;
     } else {
-      dot.className  = 'w-2 h-2 rounded-full bg-amber-400 flex-shrink-0';
+      dot.className = 'w-2 h-2 rounded-full bg-amber-500 flex-shrink-0';
       text.textContent = 'Chargement du modèle…';
       setTimeout(verifierSante, 5000);
     }
   } catch {
-    dot.className  = 'w-2 h-2 rounded-full bg-red-400 flex-shrink-0';
+    dot.className = 'w-2 h-2 rounded-full bg-red-500 flex-shrink-0';
     text.textContent = 'API inaccessible';
   }
 }
@@ -60,20 +62,20 @@ verifierSante();
 
 // ── Gestion de l'import de fichier ────────────────────────────────────────
 function configurerUpload(panelId) {
-  const zone    = $(`#${panelId}-zone`);
-  const input   = $(`#${panelId}-file`);
+  const zone = $(`#${panelId}-zone`);
+  const input = $(`#${panelId}-file`);
   const preview = $(`#${panelId}-preview`);
 
   zone.addEventListener('dragover', e => {
     e.preventDefault();
-    zone.classList.add('border-indigo-500/60', 'bg-indigo-500/5');
+    zone.classList.add('border-indigo-400', 'bg-indigo-50/50');
   });
   zone.addEventListener('dragleave', () => {
-    zone.classList.remove('border-indigo-500/60', 'bg-indigo-500/5');
+    zone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
   });
   zone.addEventListener('drop', e => {
     e.preventDefault();
-    zone.classList.remove('border-indigo-500/60', 'bg-indigo-500/5');
+    zone.classList.remove('border-indigo-400', 'bg-indigo-50/50');
     const f = e.dataTransfer.files[0];
     if (f) selectionnerFichier(f, panelId, preview);
   });
@@ -104,19 +106,19 @@ function selectionnerFichier(file, panelId, previewEl) {
 
 // ── Enregistrement micro ───────────────────────────────────────────────────
 function configurerRecorder(panelId) {
-  const btn      = $(`#${panelId}-record-btn`);
-  const status   = $(`#${panelId}-recorder-status`);
-  const timer    = $(`#${panelId}-recorder-timer`);
+  const btn = $(`#${panelId}-record-btn`);
+  const status = $(`#${panelId}-recorder-status`);
+  const timer = $(`#${panelId}-recorder-timer`);
   const waveform = $(`#${panelId}-waveform`);
-  const preview  = $(`#${panelId}-preview`);
-  const r        = state.recorder;
+  const preview = $(`#${panelId}-preview`);
+  const r = state.recorder;
 
   btn.addEventListener('click', async () => {
     if (r.mediaRecorder && r.mediaRecorder.state === 'recording') {
       r.mediaRecorder.stop();
       clearInterval(r.timerInterval);
       btn.classList.remove('recording');
-      btn.textContent = '🎤';
+      btn.innerHTML = ICON_MIC;
       status.textContent = 'Traitement…';
       waveform.classList.add('hidden');
       waveform.classList.remove('flex');
@@ -138,13 +140,13 @@ function configurerRecorder(panelId) {
           $('[data-size]', preview).textContent = formaterOctets(blob.size);
           preview.classList.remove('hidden');
           status.textContent = 'Enregistrement prêt';
-          timer.textContent  = '';
+          timer.textContent = '';
           stream.getTracks().forEach(t => t.stop());
         };
 
         r.mediaRecorder.start();
         btn.classList.add('recording');
-        btn.textContent = '⏹';
+        btn.innerHTML = ICON_STOP;
         status.textContent = 'Enregistrement en cours…';
         waveform.classList.remove('hidden');
         waveform.classList.add('flex');
@@ -199,7 +201,7 @@ $('#comprendre-form').addEventListener('submit', async e => {
   if (!data) return;
 
   $('#comprendre-question-display').textContent = data.question;
-  $('#comprendre-answer').textContent           = data.answer;
+  $('#comprendre-answer').textContent = data.answer;
   afficherResultat('comprendre');
 });
 
@@ -216,8 +218,8 @@ $('#analyser-form').addEventListener('submit', async e => {
   if (!data) return;
 
   $('#analyser-transcription').textContent = data.transcription;
-  $('#analyser-resume').textContent        = data.summary;
-  $('#analyser-sentiment').textContent     = data.sentiment;
+  $('#analyser-resume').textContent = data.summary;
+  $('#analyser-sentiment').textContent = data.sentiment;
   if (data.duration_seconds) {
     $('#analyser-duration').textContent = `${data.duration_seconds}s`;
     $('#analyser-meta').classList.remove('hidden');
@@ -232,7 +234,7 @@ async function appelAPI(url, formData, btnId) {
   effacerAlertes();
 
   try {
-    const res  = await fetch(url, { method: 'POST', body: formData });
+    const res = await fetch(url, { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
     return data;
@@ -293,7 +295,7 @@ function activerChargement(btn, loading) {
 
 // ── Utilitaires ────────────────────────────────────────────────────────────
 function formaterOctets(b) {
-  if (b < 1024)    return `${b} o`;
+  if (b < 1024) return `${b} o`;
   if (b < 1048576) return `${(b / 1024).toFixed(1)} Ko`;
   return `${(b / 1048576).toFixed(1)} Mo`;
 }

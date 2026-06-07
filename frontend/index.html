@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr" class="scroll-smooth">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,9 +13,8 @@
       theme: {
         extend: {
           colors: {
-            brand: { DEFAULT: '#6366f1', dark: '#4f46e5', light: '#818cf8' },
+            brand: { DEFAULT: '#4f46e5', dark: '#4338ca', light: '#6366f1' },
           },
-          backdropBlur: { xs: '2px' },
         }
       }
     }
@@ -23,458 +23,501 @@
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 
-<body class="min-h-screen bg-[#080c18] text-slate-100 font-sans antialiased">
+<body class="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
 
-<!-- ══ EN-TÊTE ══════════════════════════════════════════════════════ -->
-<header class="header-glow border-b border-white/10">
-  <div class="max-w-4xl mx-auto px-4 py-8 text-center">
+  <!-- ══ EN-TÊTE ══════════════════════════════════════════════════════ -->
+  <header class="border-b border-slate-200 bg-white">
+    <div class="max-w-3xl mx-auto px-4 py-10 text-center">
 
-    <!-- Logo -->
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl
-                bg-gradient-to-br from-indigo-500 to-violet-600
-                shadow-lg shadow-indigo-500/40 mb-4 text-3xl">
-      🎧
+      <!-- Logo -->
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl
+                bg-indigo-600 text-white shadow-sm mb-5">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5a9 9 0 0 1 18 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+        </svg>
+      </div>
+
+      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+        Compréhension <span class="text-indigo-600">Audio</span>
+      </h1>
+      <p class="mt-3 text-slate-500 text-sm sm:text-base">
+        Propulsé par
+        <span class="font-mono text-indigo-600">Qwen2-Audio-7B-Instruct</span>
+        · Université Euromed de Fès
+      </p>
+      <span class="inline-block mt-4 px-3 py-1 text-xs font-medium rounded-full
+                 bg-indigo-50 border border-indigo-100 text-indigo-700
+                 tracking-wide">
+        Audio-Texte → Texte
+      </span>
+    </div>
+  </header>
+
+  <!-- ══ CONTENU PRINCIPAL ════════════════════════════════════════════ -->
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+
+    <!-- Barre de statut -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" id="status-dot"></span>
+      <span id="status-text">Vérification de l'API…</span>
     </div>
 
-    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
-      Compréhension <span class="text-indigo-400">Audio</span>
-    </h1>
-    <p class="mt-2 text-slate-400 text-sm sm:text-base">
-      Propulsé par
-      <span class="font-mono text-indigo-300">Qwen2-Audio-7B-Instruct</span>
-       · Université Euromed de Fès
-    </p>
-    <span class="inline-block mt-3 px-3 py-1 text-xs font-semibold rounded-full
-                 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300
-                 tracking-wide uppercase">
-      Audio-Texte → Texte
-    </span>
-  </div>
-</header>
-
-<!-- ══ CONTENU PRINCIPAL ════════════════════════════════════════════ -->
-<main class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-
-  <!-- Barre de statut -->
-  <div class="flex items-center gap-2 text-sm text-slate-500">
-    <span class="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" id="status-dot"></span>
-    <span id="status-text">Vérification de l'API…</span>
-  </div>
-
-  <!-- ── Navigation onglets ──────────────────────────────────────── -->
-  <div class="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
-    <button data-tab="transcrire"
-            class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
+    <!-- ── Navigation onglets ──────────────────────────────────────── -->
+    <div class="flex gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1">
+      <button data-tab="transcrire" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
                    rounded-lg text-sm font-semibold transition-all duration-200
-                   bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md">
-      <span>📝</span> Transcrire
-    </button>
-    <button data-tab="comprendre"
-            class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
+                   bg-white text-indigo-600 shadow-sm">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+          <path d="M14 2v5h5" /><path d="M16 13H8" /><path d="M16 17H8" />
+        </svg>
+        Transcrire
+      </button>
+      <button data-tab="comprendre" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
                    rounded-lg text-sm font-semibold transition-all duration-200
-                   text-slate-400 hover:text-white hover:bg-white/5">
-      <span>💬</span> Comprendre
-    </button>
-    <button data-tab="analyser"
-            class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
+                   text-slate-500 hover:text-slate-800">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+        </svg>
+        Comprendre
+      </button>
+      <button data-tab="analyser" class="tab-btn flex-1 flex items-center justify-center gap-2 py-2.5 px-4
                    rounded-lg text-sm font-semibold transition-all duration-200
-                   text-slate-400 hover:text-white hover:bg-white/5">
-      <span>🔍</span> Analyser
-    </button>
-  </div>
+                   text-slate-500 hover:text-slate-800">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+        </svg>
+        Analyser
+      </button>
+    </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════════
        ONGLET : TRANSCRIRE
        ══════════════════════════════════════════════════════════════ -->
-  <div class="tab-panel" id="panel-transcrire">
-    <form id="transcrire-form" class="space-y-4">
+    <div class="tab-panel" id="panel-transcrire">
+      <form id="transcrire-form" class="space-y-4">
 
-      <!-- Carte upload -->
-      <div class="bg-white/5 backdrop-blur-sm border border-white/10
-                  rounded-2xl p-6 shadow-xl shadow-black/30">
-        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-4">
-          <span class="w-6 h-6 rounded-md bg-indigo-500/20 flex items-center justify-center text-xs">📁</span>
-          Fichier audio
-        </h2>
+        <!-- Carte upload -->
+        <div class="card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2.5 mb-4">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" />
+              </svg>
+            </span>
+            Fichier audio
+          </h2>
 
-        <!-- Zone de dépôt -->
-        <div id="transcrire-zone"
-             class="upload-zone relative border-2 border-dashed border-white/15 rounded-xl
+          <!-- Zone de dépôt -->
+          <div id="transcrire-zone" class="upload-zone relative border-2 border-dashed border-slate-300 rounded-xl
                     p-8 text-center cursor-pointer transition-all duration-200
-                    hover:border-indigo-500/60 hover:bg-indigo-500/5 group">
-          <input type="file" id="transcrire-file" accept="audio/*"
-                 class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🎵</div>
-          <p class="text-sm text-slate-400">
-            <span class="font-semibold text-indigo-400">Cliquez pour importer</span>
-            &nbsp;ou glissez-déposez un fichier
-          </p>
-          <p class="text-xs text-slate-600 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
-        </div>
-
-        <!-- Aperçu fichier -->
-        <div id="transcrire-preview"
-             class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
-                    bg-emerald-500/10 border border-emerald-500/25">
-          <span class="text-xl">🎵</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-200 truncate" data-name>—</p>
-            <p class="text-xs text-slate-500" data-size>—</p>
-          </div>
-          <button type="button" id="transcrire-remove"
-                  class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md
-                         hover:bg-red-500/10 text-lg leading-none">✕</button>
-        </div>
-
-        <!-- Enregistrement micro -->
-        <div class="mt-4 flex items-center gap-4 bg-white/5 border border-white/10
-                    rounded-xl px-4 py-3">
-          <button type="button" id="transcrire-record-btn"
-                  class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
-                         bg-gradient-to-br from-red-500 to-rose-600 text-white text-lg
-                         shadow-lg shadow-red-500/30 hover:scale-105 transition-transform">
-            🎤
-          </button>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-slate-300" id="transcrire-recorder-status">
-              Cliquez pour enregistrer
+                    hover:border-indigo-400 hover:bg-indigo-50/50 group">
+            <input type="file" id="transcrire-file" accept="audio/*"
+              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+            <svg class="w-10 h-10 mx-auto mb-3 text-slate-400 group-hover:text-indigo-500 transition-colors"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" />
+              <line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+            <p class="text-sm text-slate-500">
+              <span class="font-semibold text-indigo-600">Cliquez pour importer</span>
+              &nbsp;ou glissez-déposez un fichier
             </p>
-            <p class="text-xs text-slate-600 font-mono" id="transcrire-recorder-timer"></p>
+            <p class="text-xs text-slate-400 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
           </div>
-          <div class="waveform hidden items-center gap-1 h-7" id="transcrire-waveform">
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
+
+          <!-- Aperçu fichier -->
+          <div id="transcrire-preview" class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
+                    bg-emerald-50 border border-emerald-200">
+            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate" data-name>—</p>
+              <p class="text-xs text-slate-400" data-size>—</p>
+            </div>
+            <button type="button" id="transcrire-remove" class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md
+                         hover:bg-red-50">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Enregistrement micro -->
+          <div class="mt-4 flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <button type="button" id="transcrire-record-btn" class="record-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
+                         bg-red-500 text-white shadow-sm hover:bg-red-600 transition-colors">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            </button>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700" id="transcrire-recorder-status">
+                Cliquez pour enregistrer
+              </p>
+              <p class="text-xs text-slate-400 font-mono" id="transcrire-recorder-timer"></p>
+            </div>
+            <div class="waveform hidden items-center gap-1 h-7" id="transcrire-waveform">
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Alerte erreur -->
-      <div id="transcrire-alert"
-           class="hidden flex items-start gap-3 px-4 py-3 rounded-xl
-                  bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-        <span class="text-base mt-0.5">⚠️</span>
-        <span data-msg></span>
-      </div>
+        <!-- Alerte erreur -->
+        <div id="transcrire-alert" class="hidden items-start gap-3 px-4 py-3 rounded-xl
+                  bg-red-50 border border-red-200 text-red-700 text-sm">
+          <svg class="w-5 h-5 flex-shrink-0 mt-px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+          <span data-msg></span>
+        </div>
 
-      <!-- Bouton -->
-      <button type="submit" id="transcrire-submit"
-              class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl
-                     font-semibold text-white text-sm transition-all duration-200
-                     bg-gradient-to-r from-indigo-500 to-violet-600
-                     hover:from-indigo-400 hover:to-violet-500
-                     shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50
-                     hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed
-                     disabled:transform-none">
-        <svg class="spinner hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></svg>
-        <span class="btn-label">📝 Transcrire l'audio</span>
-      </button>
-    </form>
+        <!-- Bouton -->
+        <button type="submit" id="transcrire-submit" class="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl
+                     font-semibold text-white text-sm transition-colors duration-200
+                     bg-indigo-600 hover:bg-indigo-700 shadow-sm
+                     disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="spinner hidden w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></svg>
+          <span class="btn-label">Transcrire l'audio</span>
+        </button>
+      </form>
 
-    <!-- Résultat -->
-    <div id="transcrire-result" class="hidden mt-4 fade-up">
-      <div class="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl shadow-black/30">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-            Transcription complète
-          </h3>
-          <button data-copy="#transcrire-text"
-                  class="copy-btn text-xs text-slate-500 border border-white/10 rounded-lg
-                         px-2.5 py-1 hover:border-indigo-500/50 hover:text-indigo-400
+      <!-- Résultat -->
+      <div id="transcrire-result" class="hidden mt-4 fade-up">
+        <div class="card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+              Transcription complète
+            </h3>
+            <button data-copy="#transcrire-text" class="copy-btn text-xs text-slate-500 border border-slate-200 rounded-lg
+                         px-2.5 py-1 hover:border-indigo-300 hover:text-indigo-600
                          transition-all">Copier</button>
+          </div>
+          <div id="transcrire-text" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm
+                    text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+          <p id="transcrire-meta" class="hidden mt-3 text-xs text-slate-400">
+            Durée : <strong id="transcrire-duration" class="text-slate-500 font-medium"></strong>
+          </p>
         </div>
-        <div id="transcrire-text"
-             class="bg-black/30 border border-white/10 rounded-xl p-4 text-sm
-                    text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-        <p id="transcrire-meta" class="hidden mt-3 text-xs text-slate-600">
-          ⏱ Durée : <strong id="transcrire-duration" class="text-slate-500"></strong>
-        </p>
       </div>
     </div>
-  </div>
 
-  <!-- ══════════════════════════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════════
        ONGLET : COMPRENDRE
        ══════════════════════════════════════════════════════════════ -->
-  <div class="tab-panel hidden" id="panel-comprendre">
-    <form id="comprendre-form" class="space-y-4">
+    <div class="tab-panel hidden" id="panel-comprendre">
+      <form id="comprendre-form" class="space-y-4">
 
-      <div class="bg-white/5 backdrop-blur-sm border border-white/10
-                  rounded-2xl p-6 shadow-xl shadow-black/30">
-        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-4">
-          <span class="w-6 h-6 rounded-md bg-indigo-500/20 flex items-center justify-center text-xs">💬</span>
-          Question sur l'audio
-        </h2>
+        <div class="card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2.5 mb-4">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+              </svg>
+            </span>
+            Question sur l'audio
+          </h2>
 
-        <div id="comprendre-zone"
-             class="upload-zone relative border-2 border-dashed border-white/15 rounded-xl
+          <div id="comprendre-zone" class="upload-zone relative border-2 border-dashed border-slate-300 rounded-xl
                     p-8 text-center cursor-pointer transition-all duration-200
-                    hover:border-indigo-500/60 hover:bg-indigo-500/5 group">
-          <input type="file" id="comprendre-file" accept="audio/*"
-                 class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🎵</div>
-          <p class="text-sm text-slate-400">
-            <span class="font-semibold text-indigo-400">Cliquez pour importer</span>
-            &nbsp;ou glissez-déposez un fichier
+                    hover:border-indigo-400 hover:bg-indigo-50/50 group">
+            <input type="file" id="comprendre-file" accept="audio/*"
+              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+            <svg class="w-10 h-10 mx-auto mb-3 text-slate-400 group-hover:text-indigo-500 transition-colors"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" />
+              <line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+            <p class="text-sm text-slate-500">
+              <span class="font-semibold text-indigo-600">Cliquez pour importer</span>
+              &nbsp;ou glissez-déposez un fichier
+            </p>
+            <p class="text-xs text-slate-400 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
+          </div>
+
+          <div id="comprendre-preview" class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
+                    bg-emerald-50 border border-emerald-200">
+            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate" data-name>—</p>
+              <p class="text-xs text-slate-400" data-size>—</p>
+            </div>
+            <button type="button" id="comprendre-remove" class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md
+                         hover:bg-red-50">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mt-4 flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <button type="button" id="comprendre-record-btn" class="record-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
+                         bg-red-500 text-white shadow-sm hover:bg-red-600 transition-colors">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            </button>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700" id="comprendre-recorder-status">
+                Cliquez pour enregistrer
+              </p>
+              <p class="text-xs text-slate-400 font-mono" id="comprendre-recorder-timer"></p>
+            </div>
+            <div class="waveform hidden items-center gap-1 h-7" id="comprendre-waveform">
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+            </div>
+          </div>
+
+          <!-- Question -->
+          <div class="mt-4">
+            <label for="comprendre-question"
+              class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              Votre question
+            </label>
+            <textarea id="comprendre-question" name="question" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3
+                           text-sm text-slate-800 placeholder-slate-400 resize-none
+                           focus:outline-none focus:border-indigo-400 focus:ring-2
+                           focus:ring-indigo-100 transition-all"
+              placeholder="Ex. : Quelle est la langue parlée ? Qui parle ? Quelles émotions sont exprimées ?">De quoi parle cet audio ?</textarea>
+          </div>
+        </div>
+
+        <div id="comprendre-alert" class="hidden items-start gap-3 px-4 py-3 rounded-xl
+                  bg-red-50 border border-red-200 text-red-700 text-sm">
+          <svg class="w-5 h-5 flex-shrink-0 mt-px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+          <span data-msg></span>
+        </div>
+
+        <button type="submit" id="comprendre-submit" class="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl
+                     font-semibold text-white text-sm transition-colors duration-200
+                     bg-indigo-600 hover:bg-indigo-700 shadow-sm
+                     disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="spinner hidden w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></svg>
+          <span class="btn-label">Poser la question</span>
+        </button>
+      </form>
+
+      <div id="comprendre-result" class="hidden mt-4 fade-up space-y-3">
+        <div class="card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div class="mb-4">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Question</p>
+            <p id="comprendre-question-display" class="text-sm text-slate-600 italic bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+            </p>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>Réponse
+              </p>
+              <button data-copy="#comprendre-answer" class="copy-btn text-xs text-slate-500 border border-slate-200 rounded-lg
+                           px-2.5 py-1 hover:border-indigo-300 hover:text-indigo-600 transition-all">
+                Copier
+              </button>
+            </div>
+            <div id="comprendre-answer" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm
+                      text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+       ONGLET : ANALYSER
+       ══════════════════════════════════════════════════════════════ -->
+    <div class="tab-panel hidden" id="panel-analyser">
+      <form id="analyser-form" class="space-y-4">
+
+        <div class="card bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2.5 mb-1">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+              </svg>
+            </span>
+            Analyse complète
+          </h2>
+          <p class="text-xs text-slate-400 mb-4 ml-9">
+            Génère automatiquement : transcription · résumé · sentiment/ton
           </p>
-          <p class="text-xs text-slate-600 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
-        </div>
 
-        <div id="comprendre-preview"
-             class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
-                    bg-emerald-500/10 border border-emerald-500/25">
-          <span class="text-xl">🎵</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-200 truncate" data-name>—</p>
-            <p class="text-xs text-slate-500" data-size>—</p>
-          </div>
-          <button type="button" id="comprendre-remove"
-                  class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md
-                         hover:bg-red-500/10 text-lg leading-none">✕</button>
-        </div>
-
-        <div class="mt-4 flex items-center gap-4 bg-white/5 border border-white/10
-                    rounded-xl px-4 py-3">
-          <button type="button" id="comprendre-record-btn"
-                  class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
-                         bg-gradient-to-br from-red-500 to-rose-600 text-white text-lg
-                         shadow-lg shadow-red-500/30 hover:scale-105 transition-transform">
-            🎤
-          </button>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-slate-300" id="comprendre-recorder-status">
-              Cliquez pour enregistrer
+          <div id="analyser-zone" class="upload-zone relative border-2 border-dashed border-slate-300 rounded-xl
+                    p-8 text-center cursor-pointer transition-all duration-200
+                    hover:border-indigo-400 hover:bg-indigo-50/50 group">
+            <input type="file" id="analyser-file" accept="audio/*"
+              class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+            <svg class="w-10 h-10 mx-auto mb-3 text-slate-400 group-hover:text-indigo-500 transition-colors"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" />
+              <line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+            <p class="text-sm text-slate-500">
+              <span class="font-semibold text-indigo-600">Cliquez pour importer</span>
+              &nbsp;ou glissez-déposez un fichier
             </p>
-            <p class="text-xs text-slate-600 font-mono" id="comprendre-recorder-timer"></p>
+            <p class="text-xs text-slate-400 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
           </div>
-          <div class="waveform hidden items-center gap-1 h-7" id="comprendre-waveform">
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
+
+          <div id="analyser-preview" class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
+                    bg-emerald-50 border border-emerald-200">
+            <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate" data-name>—</p>
+              <p class="text-xs text-slate-400" data-size>—</p>
+            </div>
+            <button type="button" id="analyser-remove" class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded-md
+                         hover:bg-red-50">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mt-4 flex items-center gap-4 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+            <button type="button" id="analyser-record-btn" class="record-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
+                         bg-red-500 text-white shadow-sm hover:bg-red-600 transition-colors">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" />
+              </svg>
+            </button>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-700" id="analyser-recorder-status">
+                Cliquez pour enregistrer
+              </p>
+              <p class="text-xs text-slate-400 font-mono" id="analyser-recorder-timer"></p>
+            </div>
+            <div class="waveform hidden items-center gap-1 h-7" id="analyser-waveform">
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+              <span class="wave-bar block w-1 rounded-full"></span>
+            </div>
           </div>
         </div>
 
-        <!-- Question -->
-        <div class="mt-4">
-          <label for="comprendre-question"
-                 class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-            Votre question
-          </label>
-          <textarea id="comprendre-question" name="question" rows="3"
-                    class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3
-                           text-sm text-slate-200 placeholder-slate-600 resize-none
-                           focus:outline-none focus:border-indigo-500/60 focus:ring-1
-                           focus:ring-indigo-500/30 transition-all"
-                    placeholder="Ex. : Quelle est la langue parlée ? Qui parle ? Quelles émotions sont exprimées ?"
-          >De quoi parle cet audio ?</textarea>
+        <div id="analyser-alert" class="hidden items-start gap-3 px-4 py-3 rounded-xl
+                  bg-red-50 border border-red-200 text-red-700 text-sm">
+          <svg class="w-5 h-5 flex-shrink-0 mt-px" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" /><line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+          <span data-msg></span>
         </div>
-      </div>
 
-      <div id="comprendre-alert"
-           class="hidden flex items-start gap-3 px-4 py-3 rounded-xl
-                  bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-        <span class="text-base mt-0.5">⚠️</span>
-        <span data-msg></span>
-      </div>
+        <button type="submit" id="analyser-submit" class="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl
+                     font-semibold text-white text-sm transition-colors duration-200
+                     bg-indigo-600 hover:bg-indigo-700 shadow-sm
+                     disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="spinner hidden w-4 h-4 border-2 border-white/40 border-t-white rounded-full"></svg>
+          <span class="btn-label">Analyser l'audio</span>
+        </button>
+      </form>
 
-      <button type="submit" id="comprendre-submit"
-              class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl
-                     font-semibold text-white text-sm transition-all duration-200
-                     bg-gradient-to-r from-indigo-500 to-violet-600
-                     hover:from-indigo-400 hover:to-violet-500
-                     shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50
-                     hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed
-                     disabled:transform-none">
-        <svg class="spinner hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></svg>
-        <span class="btn-label">💬 Poser la question</span>
-      </button>
-    </form>
+      <div id="analyser-result" class="hidden mt-4 fade-up space-y-3">
 
-    <div id="comprendre-result" class="hidden mt-4 fade-up space-y-3">
-      <div class="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl shadow-black/30">
-        <div class="mb-4">
-          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Question</p>
-          <p id="comprendre-question-display"
-             class="text-sm text-slate-400 italic bg-black/20 rounded-lg px-3 py-2"></p>
-        </div>
-        <div>
-          <div class="flex items-center justify-between mb-2">
+        <!-- Transcription -->
+        <div class="card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
             <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>Réponse
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>Transcription
             </p>
-            <button data-copy="#comprendre-answer"
-                    class="copy-btn text-xs text-slate-500 border border-white/10 rounded-lg
-                           px-2.5 py-1 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">
+            <button data-copy="#analyser-transcription" class="copy-btn text-xs text-slate-500 border border-slate-200 rounded-lg
+                         px-2.5 py-1 hover:border-indigo-300 hover:text-indigo-600 transition-all">
               Copier
             </button>
           </div>
-          <div id="comprendre-answer"
-               class="bg-black/30 border border-white/10 rounded-xl p-4 text-sm
-                      text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════════════════════════
-       ONGLET : ANALYSER
-       ══════════════════════════════════════════════════════════════ -->
-  <div class="tab-panel hidden" id="panel-analyser">
-    <form id="analyser-form" class="space-y-4">
-
-      <div class="bg-white/5 backdrop-blur-sm border border-white/10
-                  rounded-2xl p-6 shadow-xl shadow-black/30">
-        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-1">
-          <span class="w-6 h-6 rounded-md bg-indigo-500/20 flex items-center justify-center text-xs">🔍</span>
-          Analyse complète
-        </h2>
-        <p class="text-xs text-slate-500 mb-4">
-          Génère automatiquement : transcription · résumé · sentiment/ton
-        </p>
-
-        <div id="analyser-zone"
-             class="upload-zone relative border-2 border-dashed border-white/15 rounded-xl
-                    p-8 text-center cursor-pointer transition-all duration-200
-                    hover:border-indigo-500/60 hover:bg-indigo-500/5 group">
-          <input type="file" id="analyser-file" accept="audio/*"
-                 class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-          <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🎵</div>
-          <p class="text-sm text-slate-400">
-            <span class="font-semibold text-indigo-400">Cliquez pour importer</span>
-            &nbsp;ou glissez-déposez un fichier
-          </p>
-          <p class="text-xs text-slate-600 mt-1">WAV · MP3 · OGG · FLAC · WebM · M4A — max 50 Mo</p>
+          <div id="analyser-transcription" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm
+                    text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
         </div>
 
-        <div id="analyser-preview"
-             class="hidden mt-3 flex items-center gap-3 px-4 py-3 rounded-xl
-                    bg-emerald-500/10 border border-emerald-500/25">
-          <span class="text-xl">🎵</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-slate-200 truncate" data-name>—</p>
-            <p class="text-xs text-slate-500" data-size>—</p>
-          </div>
-          <button type="button" id="analyser-remove"
-                  class="text-slate-500 hover:text-red-400 transition-colors p-1 rounded-md
-                         hover:bg-red-500/10 text-lg leading-none">✕</button>
-        </div>
-
-        <div class="mt-4 flex items-center gap-4 bg-white/5 border border-white/10
-                    rounded-xl px-4 py-3">
-          <button type="button" id="analyser-record-btn"
-                  class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0
-                         bg-gradient-to-br from-red-500 to-rose-600 text-white text-lg
-                         shadow-lg shadow-red-500/30 hover:scale-105 transition-transform">
-            🎤
-          </button>
-          <div class="flex-1">
-            <p class="text-sm font-medium text-slate-300" id="analyser-recorder-status">
-              Cliquez pour enregistrer
+        <!-- Résumé -->
+        <div class="card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>Résumé
             </p>
-            <p class="text-xs text-slate-600 font-mono" id="analyser-recorder-timer"></p>
+            <button data-copy="#analyser-resume" class="copy-btn text-xs text-slate-500 border border-slate-200 rounded-lg
+                         px-2.5 py-1 hover:border-indigo-300 hover:text-indigo-600 transition-all">
+              Copier
+            </button>
           </div>
-          <div class="waveform hidden items-center gap-1 h-7" id="analyser-waveform">
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
-            <span class="wave-bar block w-1 bg-indigo-400 rounded-full"></span>
+          <div id="analyser-resume" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm
+                    text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+        </div>
+
+        <!-- Sentiment -->
+        <div class="card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sentiment &amp; ton
+            </p>
+            <button data-copy="#analyser-sentiment" class="copy-btn text-xs text-slate-500 border border-slate-200 rounded-lg
+                         px-2.5 py-1 hover:border-indigo-300 hover:text-indigo-600 transition-all">
+              Copier
+            </button>
           </div>
+          <div id="analyser-sentiment" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm
+                    text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
         </div>
+
+        <p id="analyser-meta" class="hidden text-xs text-slate-400 px-1">
+          Durée : <strong id="analyser-duration" class="text-slate-500 font-medium"></strong>
+        </p>
       </div>
-
-      <div id="analyser-alert"
-           class="hidden flex items-start gap-3 px-4 py-3 rounded-xl
-                  bg-red-500/10 border border-red-500/25 text-red-300 text-sm">
-        <span class="text-base mt-0.5">⚠️</span>
-        <span data-msg></span>
-      </div>
-
-      <button type="submit" id="analyser-submit"
-              class="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl
-                     font-semibold text-white text-sm transition-all duration-200
-                     bg-gradient-to-r from-indigo-500 to-violet-600
-                     hover:from-indigo-400 hover:to-violet-500
-                     shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50
-                     hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed
-                     disabled:transform-none">
-        <svg class="spinner hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></svg>
-        <span class="btn-label">🔍 Analyser l'audio</span>
-      </button>
-    </form>
-
-    <div id="analyser-result" class="hidden mt-4 fade-up space-y-3">
-
-      <!-- Transcription -->
-      <div class="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl shadow-black/30">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>Transcription
-          </p>
-          <button data-copy="#analyser-transcription"
-                  class="copy-btn text-xs text-slate-500 border border-white/10 rounded-lg
-                         px-2.5 py-1 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">
-            Copier
-          </button>
-        </div>
-        <div id="analyser-transcription"
-             class="bg-black/30 border border-white/10 rounded-xl p-4 text-sm
-                    text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-      </div>
-
-      <!-- Résumé -->
-      <div class="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl shadow-black/30">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-violet-400"></span>Résumé
-          </p>
-          <button data-copy="#analyser-resume"
-                  class="copy-btn text-xs text-slate-500 border border-white/10 rounded-lg
-                         px-2.5 py-1 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">
-            Copier
-          </button>
-        </div>
-        <div id="analyser-resume"
-             class="bg-black/30 border border-white/10 rounded-xl p-4 text-sm
-                    text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-      </div>
-
-      <!-- Sentiment -->
-      <div class="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl shadow-black/30">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Sentiment &amp; ton
-          </p>
-          <button data-copy="#analyser-sentiment"
-                  class="copy-btn text-xs text-slate-500 border border-white/10 rounded-lg
-                         px-2.5 py-1 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">
-            Copier
-          </button>
-        </div>
-        <div id="analyser-sentiment"
-             class="bg-black/30 border border-white/10 rounded-xl p-4 text-sm
-                    text-slate-200 leading-relaxed whitespace-pre-wrap"></div>
-      </div>
-
-      <p id="analyser-meta" class="hidden text-xs text-slate-600 px-1">
-        ⏱ Durée : <strong id="analyser-duration" class="text-slate-500"></strong>
-      </p>
     </div>
-  </div>
 
-</main>
+  </main>
 
-<!-- ══ PIED DE PAGE ═════════════════════════════════════════════════ -->
-<footer class="border-t border-white/10 mt-12 py-6 text-center text-xs text-slate-600">
-  <p class="font-semibold text-slate-500">Compréhension Audio · Qwen2-Audio-7B-Instruct</p>
-  <p class="mt-1">Université Euromed de Fès · EIDIA · Tassnim &amp; Zineb · 2025/2026</p>
-</footer>
+  <!-- ══ PIED DE PAGE ═════════════════════════════════════════════════ -->
+  <footer class="border-t border-slate-200 mt-12 py-6 text-center text-xs text-slate-400">
+    <p class="font-semibold text-slate-500">Compréhension Audio · Qwen2-Audio-7B-Instruct</p>
+    <p class="mt-1">Université Euromed de Fès · EIDIA · Tassnim &amp; Zineb · 2025/2026</p>
+  </footer>
 
-<script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js"></script>
 </body>
+
 </html>
