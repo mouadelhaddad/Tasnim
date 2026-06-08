@@ -8,9 +8,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2-Audio-7B-Instruct")
-USE_MOCK = os.getenv("USE_MOCK", "false").lower() == "true"
-# Optional quantization for limited-VRAM GPUs (e.g. Colab T4 ~15 GB).
+MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2-Audio-7B-Instruct")
+USE_MOCK     = os.getenv("USE_MOCK",     "false").lower() == "true"
 LOAD_IN_4BIT = os.getenv("LOAD_IN_4BIT", "false").lower() == "true"
 LOAD_IN_8BIT = os.getenv("LOAD_IN_8BIT", "false").lower() == "true"
 
@@ -68,7 +67,6 @@ def load_model() -> None:
 
     _model = Qwen2AudioForConditionalGeneration.from_pretrained(MODEL_NAME, **load_kwargs)
 
-    # device_map / bitsandbytes already place the weights; only move manually on CPU.
     if _device == "cpu" and not quantized:
         _model = _model.to(_device)
 
@@ -77,12 +75,7 @@ def load_model() -> None:
     logger.info(f"Model loaded on {_device}")
 
 
-# ---------------------------------------------------------------------------
-# Audio helpers
-# ---------------------------------------------------------------------------
-
 def _load_audio_bytes(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, int]:
-    """Return (mono float32 array, sample_rate) from raw audio bytes."""
     import soundfile as sf
     import librosa
 
@@ -105,7 +98,6 @@ def _load_audio_bytes(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, in
 
 
 def _preprocess_audio(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, float]:
-    """Load, resample to model SR, return (array, duration_seconds)."""
     import librosa
 
     target_sr: int = (
@@ -120,18 +112,9 @@ def _preprocess_audio(audio_bytes: bytes, filename: str) -> Tuple[np.ndarray, fl
     return data.astype(np.float32), duration
 
 
-# ---------------------------------------------------------------------------
-# Inference
-# ---------------------------------------------------------------------------
-
 def _build_inputs(text: str, audio_array: np.ndarray, sampling_rate: int):
-    """Feed the audio to the processor.
-
-    ``transformers`` renamed the audio argument across versions
-    (``audios`` -> ``audio``). Passing the wrong name is silently ignored
-    (it lands in ``**kwargs``), which strips the audio from the model inputs.
-    We try both and keep the call that actually yields ``input_features``.
-    """
+    # transformers renamed the kwarg (audios -> audio) across versions; try both
+    # so a wrong name isn't silently swallowed, stripping audio from the inputs.
     last_inputs = None
     for key in ("audios", "audio"):
         try:
@@ -183,16 +166,12 @@ def _run_inference(
         text, audio_array, _processor.feature_extractor.sampling_rate
     )
 
-    # If the audio never made it into the inputs, the model would silently
-    # answer as a text-only LLM ("I can't access the audio"). Fail loudly.
     if inputs is None or "input_features" not in inputs:
         raise RuntimeError(
             "Audio features missing from model inputs — the audio did not reach "
             "the model. Check the installed transformers version and audio decoding."
         )
 
-    # Move tensors to the model device; match the model dtype for audio features
-    # (the encoder is fp16 on GPU and would reject fp32 features).
     device = next(_model.parameters()).device
     model_dtype = next(_model.parameters()).dtype
     prepared: Dict[str, Any] = {}
@@ -213,7 +192,6 @@ def _run_inference(
             top_p=0.9,
         )
 
-    # Strip the prompt tokens
     generated_ids = generated_ids[:, inputs["input_ids"].size(1):]
     response: str = _processor.batch_decode(
         generated_ids,
@@ -233,17 +211,12 @@ def _build_conversation(prompt: str) -> List[Dict[str, Any]]:
         {
             "role": "user",
             "content": [
-                # audio_url is a placeholder; actual audio is passed via `audios=`
                 {"type": "audio", "audio_url": "audio_input"},
                 {"type": "text", "text": prompt},
             ],
         },
     ]
 
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 def transcribe(audio_bytes: bytes, filename: str) -> Dict[str, Any]:
     audio_array, duration = _preprocess_audio(audio_bytes, filename)
