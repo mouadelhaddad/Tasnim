@@ -307,6 +307,34 @@ offrant l'interface utilisateur.
 \caption{Architecture globale du système}
 \end{figure}
 
+\section{Déploiement sur Google Colab}
+
+Faute de GPU local suffisant, le système est déployé sur \textbf{Google Colab} en
+exploitant un GPU \textbf{NVIDIA A100}, qui dispose d'une mémoire vidéo amplement
+suffisante pour charger le modèle en précision \texttt{float16} complète (environ
+16~Go). La procédure de déploiement, automatisée par un \textit{notebook} dédié
+(\texttt{Qwen2\_Audio\_Colab.ipynb}), se déroule en quelques étapes :
+
+\begin{enumerate}
+  \item Clonage du dépôt GitHub du projet dans l'environnement Colab.
+  \item Installation des dépendances (\texttt{transformers}, \texttt{accelerate},
+        \texttt{librosa}, \texttt{ffmpeg}, FastAPI) sans réinstaller PyTorch, déjà
+        fourni avec CUDA par Colab.
+  \item Lancement du serveur \texttt{uvicorn} sur le port 8000.
+  \item Ouverture d'un tunnel public via \texttt{cloudflared}, qui expose
+        l'application sur une URL temporaire \texttt{*.trycloudflare.com}.
+\end{enumerate}
+
+Comme le serveur FastAPI sert à la fois l'interface web et l'API sur la même origine,
+l'ouverture de cette unique URL publique suffit à utiliser la plateforme complète
+depuis n'importe quel navigateur.
+
+Afin de prendre en charge des GPU plus modestes (par exemple un Colab T4 d'environ
+15~Go, insuffisant pour la précision \texttt{float16}), le chargement du modèle
+accepte une \textbf{quantification optionnelle} en 4 bits ou 8 bits via la
+bibliothèque \texttt{bitsandbytes}, activable par les variables d'environnement
+\texttt{LOAD\_IN\_4BIT} et \texttt{LOAD\_IN\_8BIT}.
+
 \section{API opérationnelle (FastAPI)}
 
 Le backend est développé avec le framework \textbf{FastAPI} \cite{fastapi} (Python),
@@ -449,18 +477,29 @@ Le développement du projet a présenté plusieurs défis techniques :
         exotiques.
 
   \item \textbf{Ressources mémoire.} Le modèle Qwen2-Audio-7B-Instruct requiert environ
-        14 Go de VRAM en précision float16. En l'absence de GPU, l'exécution sur CPU est
-        possible mais significativement plus lente (facteur $\times 10$ à $\times 20$).
+        16 Go de VRAM en précision float16, ce qui a motivé le déploiement sur un GPU
+        A100 via Google Colab, ainsi que l'ajout d'une quantification optionnelle (4 ou
+        8 bits) pour les GPU de moindre capacité.
 
-  \item \textbf{Intégration du chat template multimodal.} La méthode
+  \item \textbf{Audio non transmis au modèle.} Le défi technique le plus subtil a été
+        un bug où le modèle répondait comme un simple modèle de langage textuel
+        (« je ne peux pas accéder à l'audio »), sans aucune erreur apparente. La cause :
+        l'argument du processeur transportant l'audio a été \textbf{renommé} d'une
+        version de \texttt{transformers} à l'autre (\texttt{audios} $\rightarrow$
+        \texttt{audio}). Lorsqu'on passe le mauvais nom, l'argument est silencieusement
+        ignoré (absorbé par \texttt{**kwargs}) et l'audio disparaît des entrées du modèle.
+        \textbf{Solution :} essayer successivement les deux noms et ne conserver que
+        l'appel produisant effectivement des caractéristiques audio
+        (\texttt{input\_features}), échouer explicitement sinon, et aligner le type des
+        tenseurs audio (float16) sur celui du modèle.
+
+  \item \textbf{Gestion du chat template multimodal.} La méthode
         \texttt{apply\_chat\_template} du processeur Qwen2-Audio nécessite une structure
-        de conversation précise mélangeant tokens audio et tokens textuels. La
-        synchronisation entre les marqueurs audio dans le template et la liste
-        \texttt{audios=[...]} passée au processeur a demandé une lecture approfondie du
-        code source du modèle.
+        de conversation précise mélangeant tokens audio et tokens textuels, dont la
+        compréhension a demandé une lecture approfondie du code source du modèle.
 
   \item \textbf{Temps d'initialisation.} Le chargement du modèle depuis Hugging Face
-        représente environ 14 Go de téléchargement à la première exécution. Le modèle est
+        représente environ 16 Go de téléchargement à la première exécution. Le modèle est
         ensuite mis en cache localement pour les exécutions suivantes.
 \end{itemize}
 
@@ -506,9 +545,10 @@ Plusieurs améliorations pourraient enrichir ce projet dans une version future :
         (\textit{chunking}) pour traiter des enregistrements de plusieurs heures (réunions,
         conférences, podcasts).
 
-  \item \textbf{Quantification 4-bit.} Utiliser des techniques de quantification (GPTQ,
-        AWQ) pour réduire l'empreinte mémoire et permettre l'exécution sur des GPUs de
-        moindre capacité ($\leq 8$ Go VRAM).
+  \item \textbf{Quantification avancée.} Au-delà de la quantification 4/8 bits
+        (\texttt{bitsandbytes}) déjà prise en charge, explorer des méthodes hors ligne
+        telles que GPTQ ou AWQ pour réduire davantage l'empreinte mémoire et accélérer
+        l'inférence sur des GPUs de faible capacité.
 
   \item \textbf{Évaluation formelle (WER).} Mesurer le \textit{Word Error Rate} sur un
         corpus francophone de référence pour quantifier objectivement la précision du
