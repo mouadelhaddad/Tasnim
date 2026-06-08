@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 MODEL_NAME   = os.getenv("MODEL_NAME",   "Qwen/Qwen2-Audio-7B-Instruct")
-USE_MOCK     = os.getenv("USE_MOCK",     "false").lower() == "true"
 LOAD_IN_4BIT = os.getenv("LOAD_IN_4BIT", "false").lower() == "true"
 LOAD_IN_8BIT = os.getenv("LOAD_IN_8BIT", "false").lower() == "true"
 
@@ -24,17 +23,11 @@ def get_model_status() -> Dict[str, Any]:
         "model_loaded": _model_loaded,
         "model_name": MODEL_NAME,
         "device": _device,
-        "mock_mode": USE_MOCK,
     }
 
 
 def load_model() -> None:
     global _processor, _model, _device, _model_loaded
-
-    if USE_MOCK:
-        logger.info("MOCK mode enabled — skipping model download")
-        _model_loaded = True
-        return
 
     logger.info("Loading Qwen2-Audio-7B-Instruct …")
 
@@ -144,12 +137,6 @@ def _run_inference(
     conversation: List[Dict[str, Any]],
     max_new_tokens: int = 512,
 ) -> str:
-    if USE_MOCK:
-        return (
-            "Mock response: The audio contains spoken content. "
-            "Enable the real model by setting USE_MOCK=false and providing GPU resources."
-        )
-
     if _model is None or _processor is None:
         raise RuntimeError("Model is not loaded yet.")
 

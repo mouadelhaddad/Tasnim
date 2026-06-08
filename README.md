@@ -176,7 +176,6 @@ A public `*.trycloudflare.com` URL is printed at the end.
 | Variable | Default | Description |
 |---|---|---|
 | `MODEL_NAME` | `Qwen/Qwen2-Audio-7B-Instruct` | HuggingFace model ID |
-| `USE_MOCK` | `false` | Skip model loading; return placeholder responses |
 | `LOAD_IN_4BIT` | `false` | 4-bit quantization (nf4) for GPUs with < 16 GB VRAM |
 | `LOAD_IN_8BIT` | `false` | 8-bit quantization for GPUs with < 16 GB VRAM |
 | `HF_TOKEN` | *(none)* | HuggingFace token for gated models |
