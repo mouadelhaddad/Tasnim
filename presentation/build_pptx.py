@@ -499,42 +499,47 @@ for title, desc in PIPELINE_STEPS:
 # SLIDE 8 — Déploiement Google Colab
 # ════════════════════════════════════════════════════════════════════════════
 s = new_slide()
-header(s, [("Déploiement sur ", ACCENT_DK), ("Google Colab", ACCENT)], 8)
+header(s, [("Déploiement sur ", ACCENT_DK), ("Google Colab T4 + 4-bit", ACCENT)], 8)
 
 LEFT_W  = CW * 0.485
 RIGHT_W = CW - LEFT_W - GAP
 right_x = LM + LEFT_W + GAP
 
 bullets(s, LM, CONT_Y, LEFT_W, BOT - CONT_Y,
-        "Mise en service",
-        ["GPU NVIDIA A100 — modèle float16 complet (~16 Go)",
-         "Clonage du dépôt GitHub dans l'environnement Colab",
-         "Serveur uvicorn lancé sur le port 8000",
-         "Tunnel public cloudflared → URL trycloudflare.com",
-         "UI et API servies sur la même origine : une seule URL"])
+        "Pourquoi la quantification est obligatoire",
+        ["T4 GPU : 15 Go VRAM — modèle fp16 : ~16 Go → dépassement",
+         "4-bit NF4 (bitsandbytes) réduit à ~5 Go → compatible T4",
+         "NF4 conçu pour poids gaussiens → faible perte de qualité",
+         "Double quantification + compute dtype fp16",
+         "LOAD_IN_4BIT=true activé dans le notebook"])
 
 tf = textbox(s, right_x, CONT_Y, RIGHT_W, 0.38,
              ml=Pt(0), mr=Pt(0), mt=Pt(0), mb=Pt(0))
-run(tf.paragraphs[0], "Flux de déploiement", 15, ACCENT_DK, bold=True)
+run(tf.paragraphs[0], "Empreinte mémoire", 15, ACCENT_DK, bold=True)
 
-DIAG_H  = 2.20
-mono_card(s, right_x, CONT_Y + 0.44, RIGHT_W, DIAG_H, [
-    "GPU Colab A100",
+MEM_H = 1.52
+mono_card(s, right_x, CONT_Y + 0.44, RIGHT_W, MEM_H, [
+    "float16  ~16 Go  → A100 seulement",
+    "8-bit    ~8 Go   → A100 / V100",
+    "4-bit    ~5 Go   → T4, tout GPU >= 6 Go",
+], size=11)
+
+tf2 = textbox(s, right_x, CONT_Y + 0.44 + MEM_H + GAP, RIGHT_W, 0.38,
+              ml=Pt(0), mr=Pt(0), mt=Pt(0), mb=Pt(0))
+run(tf2.paragraphs[0], "Flux de déploiement", 15, ACCENT_DK, bold=True)
+
+DIAG_Y = CONT_Y + 0.44 + MEM_H + GAP + 0.42
+DIAG_H = 2.0
+mono_card(s, right_x, DIAG_Y, RIGHT_W, DIAG_H, [
+    "GPU Colab T4 (15 Go)",
+    "  LOAD_IN_4BIT=true",
     "      |",
     "  uvicorn : 8000",
     "      |",
     "  cloudflared (tunnel)",
     "      |",
     "  URL publique → navigateur",
-], size=12)
-
-QUANT_Y = CONT_Y + 0.44 + DIAG_H + GAP
-card(s, right_x, QUANT_Y, RIGHT_W, BOT - QUANT_Y,
-     "Quantification optionnelle",
-     ["4 ou 8 bits via bitsandbytes",
-      "Variables : LOAD_IN_4BIT / LOAD_IN_8BIT",
-      "Pour les GPU < 16 Go (ex. Colab T4)"],
-     accent=GREEN)
+], size=11)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -553,9 +558,10 @@ DIFFS = [
      "(audios → audio) et était silencieusement ignoré. "
      "Solution : essayer les deux noms, vérifier input_features "
      "(erreur explicite sinon) et aligner le dtype audio en float16."),
-    ("Ressources mémoire (~16 Go VRAM)",
-     "Le modèle 7B en float16 exige un GPU conséquent. "
-     "Solution : GPU Colab A100 + quantification 4/8 bits pour les GPU plus modestes."),
+    ("Contrainte mémoire GPU (T4 = 15 Go < 16 Go requis)",
+     "Le modèle 7B en float16 exige ~16 Go de VRAM, dépassant le T4 Colab (15 Go). "
+     "Solution : quantification 4-bit NF4 via bitsandbytes — "
+     "empreinte réduite à ~5 Go, compatible T4, perte de qualité minimale."),
 ]
 
 N = len(DIFFS)
